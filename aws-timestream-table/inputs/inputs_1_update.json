@@ -1,0 +1,14 @@
+{
+    "DatabaseName": "TestDatabaseNameForTableContractTest",
+    "TableName": "TestTableNameForTableContractTest",
+    "RetentionProperties": {
+        "MemoryStoreRetentionPeriodInHours": 48,
+        "MagneticStoreRetentionPeriodInDays": 1800
+    },
+    "Tags": [
+        {
+            "Key" : "stage",
+            "Value": "prod"
+        }
+    ]
+}

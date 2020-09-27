@@ -1,0 +1,17 @@
+{
+    "typeName": "AWS::Timestream::Table",
+    "language": "java",
+    "runtime": "java8",
+    "entrypoint": "software.amazon.timestream.table.HandlerWrapper::handleRequest",
+    "testEntrypoint": "software.amazon.timestream.table.HandlerWrapper::testEntrypoint",
+    "settings": {
+        "namespace": [
+            "software",
+            "amazon",
+            "timestream",
+            "table"
+        ],
+        "codegen_template_path": "default",
+        "protocolVersion": "2.0.0"
+    }
+}

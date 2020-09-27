@@ -1,0 +1,17 @@
+{
+    "typeName": "AWS::Timestream::Database",
+    "language": "java",
+    "runtime": "java8",
+    "entrypoint": "software.amazon.timestream.database.HandlerWrapper::handleRequest",
+    "testEntrypoint": "software.amazon.timestream.database.HandlerWrapper::testEntrypoint",
+    "settings": {
+        "namespace": [
+            "software",
+            "amazon",
+            "timestream",
+            "database"
+        ],
+        "codegen_template_path": "default",
+        "protocolVersion": "2.0.0"
+    }
+}

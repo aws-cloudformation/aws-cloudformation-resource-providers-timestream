@@ -1,0 +1,4 @@
+{
+    "DatabaseName": "TestDatabaseNameForInvalidDbContractTest",
+    "KmsKeyId": "abc"
+}
