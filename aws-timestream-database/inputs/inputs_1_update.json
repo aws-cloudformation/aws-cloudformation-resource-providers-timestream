@@ -1,9 +1,9 @@
 {
-    "DatabaseName": "TestDatabaseNameForDbContractTest",
-    "Tags": [
-        {
-            "Key" : "stage",
-            "Value": "prod"
-        }
-    ]
+  "DatabaseName": "TestDatabaseNameForDbContractTest",
+  "Tags": [
+    {
+      "Key" : "stage",
+      "Value": "prod"
+    }
+  ]
 }

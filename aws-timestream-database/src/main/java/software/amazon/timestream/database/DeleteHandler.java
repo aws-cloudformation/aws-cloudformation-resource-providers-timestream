@@ -1,9 +1,11 @@
 package software.amazon.timestream.database;
 
+import software.amazon.cloudformation.exceptions.CfnAccessDeniedException;
 import software.amazon.cloudformation.exceptions.CfnInternalFailureException;
 import software.amazon.cloudformation.exceptions.CfnInvalidRequestException;
 import software.amazon.cloudformation.exceptions.CfnNotFoundException;
 import software.amazon.cloudformation.exceptions.CfnResourceConflictException;
+import software.amazon.cloudformation.exceptions.CfnThrottlingException;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.Logger;
 import software.amazon.cloudformation.proxy.OperationStatus;
@@ -11,10 +13,13 @@ import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
 import com.amazonaws.services.timestreamwrite.AmazonTimestreamWrite;
+import com.amazonaws.services.timestreamwrite.model.AccessDeniedException;
 import com.amazonaws.services.timestreamwrite.model.ConflictException;
 import com.amazonaws.services.timestreamwrite.model.DeleteDatabaseRequest;
 import com.amazonaws.services.timestreamwrite.model.InternalServerException;
+import com.amazonaws.services.timestreamwrite.model.InvalidEndpointException;
 import com.amazonaws.services.timestreamwrite.model.ResourceNotFoundException;
+import com.amazonaws.services.timestreamwrite.model.ThrottlingException;
 import com.amazonaws.services.timestreamwrite.model.ValidationException;
 
 /**
@@ -32,10 +37,10 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
 
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
-            final AmazonWebServicesClientProxy proxy,
-            final ResourceHandlerRequest<ResourceModel> request,
-            final CallbackContext callbackContext,
-            final Logger logger) {
+        final AmazonWebServicesClientProxy proxy,
+        final ResourceHandlerRequest<ResourceModel> request,
+        final CallbackContext callbackContext,
+        final Logger logger) {
 
         timestreamClient = TimestreamClientFactory.get(proxy, logger);
         this.proxy = proxy;
@@ -50,14 +55,18 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
             throw new CfnNotFoundException(ResourceModel.TYPE_NAME, model.getDatabaseName(), ex);
         } catch (ConflictException ex) {
             throw new CfnResourceConflictException(ResourceModel.TYPE_NAME, model.getDatabaseName(), CONFLICT_REASON, ex);
-        } catch (ValidationException ex) {
+        } catch (ValidationException | InvalidEndpointException ex) {
             throw new CfnInvalidRequestException(request.toString(), ex);
         } catch(InternalServerException ex) {
             throw new CfnInternalFailureException(ex);
+        } catch (ThrottlingException ex) {
+            throw new CfnThrottlingException(DELETE_DATABASE, ex);
+        } catch (AccessDeniedException ex) {
+            throw new CfnAccessDeniedException(DELETE_DATABASE, ex);
         }
 
         return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                .status(OperationStatus.SUCCESS)
-                .build();
+            .status(OperationStatus.SUCCESS)
+            .build();
     }
 }

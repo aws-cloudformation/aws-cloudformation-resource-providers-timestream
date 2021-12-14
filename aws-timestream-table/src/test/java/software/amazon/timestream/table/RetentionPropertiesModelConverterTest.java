@@ -29,8 +29,8 @@ class RetentionPropertiesModelConverterTest {
                 .build();
         com.amazonaws.services.timestreamwrite.model.RetentionProperties sdkModel =
                 new com.amazonaws.services.timestreamwrite.model.RetentionProperties()
-                        .withMemoryStoreRetentionPeriodInHours(1000L)
-                        .withMagneticStoreRetentionPeriodInDays(2000L);
+                .withMemoryStoreRetentionPeriodInHours(1000L)
+                .withMagneticStoreRetentionPeriodInDays(2000L);
 
         assertThat(uluruModel).isEqualTo(RetentionPropertiesModelConverter.convert(sdkModel));
     }

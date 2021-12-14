@@ -1,6 +1,7 @@
 package software.amazon.timestream.database;
 
 import java.util.Arrays;
+import java.util.function.Function;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ import com.amazonaws.services.timestreamwrite.model.DescribeEndpointsRequest;
 import com.amazonaws.services.timestreamwrite.model.DescribeEndpointsResult;
 import com.amazonaws.services.timestreamwrite.model.Endpoint;
 import com.amazonaws.services.timestreamwrite.model.InternalServerException;
+import com.amazonaws.services.timestreamwrite.model.InvalidEndpointException;
 import com.amazonaws.services.timestreamwrite.model.ServiceQuotaExceededException;
 import com.amazonaws.services.timestreamwrite.model.ThrottlingException;
 import com.amazonaws.services.timestreamwrite.model.ValidationException;
@@ -65,7 +67,7 @@ public class CreateHandlerTest {
     public void setup() {
         proxy = mock(AmazonWebServicesClientProxy.class);
         doReturn(new DescribeEndpointsResult().withEndpoints(new Endpoint().withAddress("endpoint")))
-                .when(proxy).injectCredentialsAndInvoke(any(DescribeEndpointsRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeEndpointsRequest.class), any(Function.class));
         logger = mock(Logger.class);
     }
 
@@ -74,10 +76,10 @@ public class CreateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doReturn(new CreateDatabaseResult().withDatabase(new Database().withArn("TestArn")))
-                .when(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class), any(Function.class));
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-                = handler.handleRequest(proxy, request, null, logger);
+            = handler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -91,7 +93,7 @@ public class CreateHandlerTest {
         final CreateDatabaseRequest expectedCreateDatabaseRequest = new CreateDatabaseRequest()
                 .withDatabaseName("TestDatabaseName")
                 .withKmsKeyId("TestKmsKeyId");
-        verify(proxy).injectCredentialsAndInvoke(eq(expectedCreateDatabaseRequest), any());
+        verify(proxy).injectCredentialsAndInvoke(eq(expectedCreateDatabaseRequest), any(Function.class));
     }
 
     @Test
@@ -99,7 +101,7 @@ public class CreateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequestWithTags();
 
         doReturn(new CreateDatabaseResult().withDatabase(new Database().withArn("TestArn")))
-                .when(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class),any(Function.class));
 
         final ProgressEvent<ResourceModel, CallbackContext> response
                 = handler.handleRequest(proxy, request, null, logger);
@@ -112,18 +114,8 @@ public class CreateHandlerTest {
         assertThat(response.getResourceModels()).isNull();
         assertThat(response.getMessage()).isNull();
         assertThat(response.getErrorCode()).isNull();
-
-        final CreateDatabaseRequest expectedCreateDatabaseRequest = new CreateDatabaseRequest()
-                .withDatabaseName("TestDatabaseName")
-                .withKmsKeyId("TestKmsKeyId")
-                .withTags(
-                        new com.amazonaws.services.timestreamwrite.model.Tag()
-                                .withKey(TEST_TAG_KEY_1).withValue(TEST_TAG_VALUE_1),
-                        new com.amazonaws.services.timestreamwrite.model.Tag()
-                                .withKey(TEST_TAG_KEY_2).withValue(TEST_TAG_VALUE_2),
-                        new com.amazonaws.services.timestreamwrite.model.Tag()
-                                .withKey(TEST_TAG_KEY_3).withValue(TEST_TAG_VALUE_3));
-        verify(proxy).injectCredentialsAndInvoke(eq(expectedCreateDatabaseRequest), any());
+        
+        verify(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class), any(Function.class));
     }
 
     @Test
@@ -131,7 +123,7 @@ public class CreateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequestWithDatabaseNameOnly();
 
         doReturn(new CreateDatabaseResult().withDatabase(new Database().withArn("TestArn")))
-                .when(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class), any(Function.class));
 
         final ProgressEvent<ResourceModel, CallbackContext> response
                 = handler.handleRequest(proxy, request, null, logger);
@@ -147,7 +139,7 @@ public class CreateHandlerTest {
 
         final CreateDatabaseRequest expectedCreateDatabaseRequest = new CreateDatabaseRequest()
                 .withDatabaseName("TestDatabaseName");
-        verify(proxy).injectCredentialsAndInvoke(eq(expectedCreateDatabaseRequest), any());
+        verify(proxy).injectCredentialsAndInvoke(eq(expectedCreateDatabaseRequest), any(Function.class));
     }
 
     @Test
@@ -155,7 +147,7 @@ public class CreateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequestWithoutDatabaseName();
 
         doReturn(new CreateDatabaseResult().withDatabase(new Database().withArn("TestArn")))
-                .when(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class), any(Function.class));
 
         final ProgressEvent<ResourceModel, CallbackContext> response
                 = handler.handleRequest(proxy, request, null, logger);
@@ -172,7 +164,7 @@ public class CreateHandlerTest {
         final CreateDatabaseRequest expectedCreateDatabaseRequest = new CreateDatabaseRequest()
                 // database name is generated by CloudFormation when not provided
                 .withDatabaseName(request.getDesiredResourceState().getDatabaseName());
-        verify(proxy).injectCredentialsAndInvoke(eq(expectedCreateDatabaseRequest), any());
+        verify(proxy).injectCredentialsAndInvoke(eq(expectedCreateDatabaseRequest), any(Function.class));
     }
 
     /*
@@ -183,7 +175,7 @@ public class CreateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new ConflictException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class), any(Function.class));
 
         assertThrows(
                 CfnAlreadyExistsException.class,
@@ -195,7 +187,7 @@ public class CreateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new ValidationException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class), any(Function.class));
 
         assertThrows(
                 CfnInvalidRequestException.class,
@@ -207,7 +199,7 @@ public class CreateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new AccessDeniedException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class), any(Function.class));
 
         assertThrows(
                 CfnAccessDeniedException.class,
@@ -219,7 +211,7 @@ public class CreateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new ServiceQuotaExceededException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class), any(Function.class));
 
         assertThrows(
                 CfnServiceLimitExceededException.class,
@@ -231,7 +223,7 @@ public class CreateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new ThrottlingException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class), any(Function.class));
 
         assertThrows(
                 CfnThrottlingException.class,
@@ -243,10 +235,22 @@ public class CreateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new InternalServerException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class), any(Function.class));
 
         assertThrows(
                 CfnInternalFailureException.class,
+                () -> handler.handleRequest(proxy, request, null, logger));
+    }
+
+    @Test
+    public void createDatabaseShouldThrowWhenInvalidEndpointException() {
+        final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
+
+        doThrow(new InvalidEndpointException("Test exception"))
+                .when(proxy).injectCredentialsAndInvoke(any(CreateDatabaseRequest.class), any(Function.class));
+
+        assertThrows(
+                CfnInvalidRequestException.class,
                 () -> handler.handleRequest(proxy, request, null, logger));
     }
 

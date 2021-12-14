@@ -1,7 +1,9 @@
 package software.amazon.timestream.database;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,13 +30,13 @@ import com.amazonaws.services.timestreamwrite.model.DescribeEndpointsRequest;
 import com.amazonaws.services.timestreamwrite.model.DescribeEndpointsResult;
 import com.amazonaws.services.timestreamwrite.model.Endpoint;
 import com.amazonaws.services.timestreamwrite.model.InternalServerException;
+import com.amazonaws.services.timestreamwrite.model.InvalidEndpointException;
 import com.amazonaws.services.timestreamwrite.model.ResourceNotFoundException;
 import com.amazonaws.services.timestreamwrite.model.TagResourceRequest;
 import com.amazonaws.services.timestreamwrite.model.ThrottlingException;
 import com.amazonaws.services.timestreamwrite.model.UntagResourceRequest;
 import com.amazonaws.services.timestreamwrite.model.UpdateDatabaseRequest;
 import com.amazonaws.services.timestreamwrite.model.UpdateDatabaseResult;
-import com.amazonaws.services.timestreamwrite.model.UpdateTableRequest;
 import com.amazonaws.services.timestreamwrite.model.ValidationException;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -73,7 +75,7 @@ public class UpdateHandlerTest {
     public void setup() {
         proxy = mock(AmazonWebServicesClientProxy.class);
         doReturn(new DescribeEndpointsResult().withEndpoints(new Endpoint().withAddress("endpoint")))
-                .when(proxy).injectCredentialsAndInvoke(any(DescribeEndpointsRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeEndpointsRequest.class), any(Function.class));
         logger = mock(Logger.class);
     }
 
@@ -94,9 +96,9 @@ public class UpdateHandlerTest {
                 .withArn(TEST_ARN);
 
         UpdateDatabaseResult updateDatabaseResult = new UpdateDatabaseResult().withDatabase(modifiedDatabase);
-        doReturn(updateDatabaseResult).when(proxy).injectCredentialsAndInvoke(any(UpdateDatabaseRequest.class), any());
+        doReturn(updateDatabaseResult).when(proxy).injectCredentialsAndInvoke(any(UpdateDatabaseRequest.class), any(Function.class));
         doReturn(new DescribeDatabaseResult().withDatabase(database))
-                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any(Function.class));
 
         final ProgressEvent<ResourceModel, CallbackContext> response
                 = handler.handleRequest(proxy, request, null, logger);
@@ -114,7 +116,7 @@ public class UpdateHandlerTest {
                 .withDatabaseName(TEST_DATABASE_NAME)
                 .withKmsKeyId(TEST_KMS_KEY_ID_2);
 
-        verify(proxy).injectCredentialsAndInvoke(eq(expectedUpdateDatabaseRequest), any());
+        verify(proxy).injectCredentialsAndInvoke(eq(expectedUpdateDatabaseRequest), any(Function.class));
         verifyNoMoreInteractions(proxy);
     }
 
@@ -134,9 +136,9 @@ public class UpdateHandlerTest {
                 .withArn(TEST_ARN);
 
         UpdateDatabaseResult updateDatabaseResult = new UpdateDatabaseResult().withDatabase(modifiedDatabase);
-        doReturn(updateDatabaseResult).when(proxy).injectCredentialsAndInvoke(any(UpdateDatabaseRequest.class), any());
+        doReturn(updateDatabaseResult).when(proxy).injectCredentialsAndInvoke(any(UpdateDatabaseRequest.class), any(Function.class));
         doReturn(new DescribeDatabaseResult().withDatabase(database))
-                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any(Function.class));
 
         final ProgressEvent<ResourceModel, CallbackContext> response
                 = handler.handleRequest(proxy, request, null, logger);
@@ -154,7 +156,7 @@ public class UpdateHandlerTest {
                 .withDatabaseName(TEST_DATABASE_NAME)
                 .withKmsKeyId(TEST_KMS_KEY_ID_2);
 
-        verify(proxy).injectCredentialsAndInvoke(eq(expectedUpdateDatabaseRequest), any());
+        verify(proxy).injectCredentialsAndInvoke(eq(expectedUpdateDatabaseRequest), any(Function.class));
         verifyNoMoreInteractions(proxy);
     }
 
@@ -164,7 +166,7 @@ public class UpdateHandlerTest {
         final Database database = new Database().withDatabaseName(TEST_DATABASE_NAME).withArn(TEST_ARN);
 
         doReturn(new DescribeDatabaseResult().withDatabase(database))
-                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any(Function.class));
 
         final ProgressEvent<ResourceModel, CallbackContext> response
                 = handler.handleRequest(proxy, request, null, logger);
@@ -185,10 +187,10 @@ public class UpdateHandlerTest {
                         new com.amazonaws.services.timestreamwrite.model.Tag()
                                 .withKey(TEST_TAG_KEY_3).withValue(TEST_TAG_VALUE_3));
         final UntagResourceRequest expectedUntagResourceRequest =
-                new UntagResourceRequest().withResourceARN(TEST_ARN).withTagKeys(TEST_TAG_KEY_2);
+                new UntagResourceRequest().withResourceARN(TEST_ARN).withTagKeys(TEST_TAG_KEY_1);
 
-        verify(proxy).injectCredentialsAndInvoke(eq(expectedTagResourceRequest), any());
-        verify(proxy).injectCredentialsAndInvoke(eq(expectedUntagResourceRequest), any());
+        verify(proxy).injectCredentialsAndInvoke(eq(expectedTagResourceRequest), any(Function.class));
+        verify(proxy).injectCredentialsAndInvoke(eq(expectedUntagResourceRequest), any(Function.class));
         verifyNoMoreInteractions(proxy);
     }
 
@@ -200,7 +202,7 @@ public class UpdateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new InternalServerException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any(Function.class));
 
         assertThrows(CfnInternalFailureException.class, () -> handler.handleRequest(proxy, request, null, logger));
     }
@@ -210,7 +212,7 @@ public class UpdateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new ThrottlingException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any(Function.class));
 
         assertThrows(
                 CfnThrottlingException.class,
@@ -222,7 +224,7 @@ public class UpdateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new ValidationException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any(Function.class));
 
         assertThrows(
                 CfnInvalidRequestException.class,
@@ -234,7 +236,7 @@ public class UpdateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new ResourceNotFoundException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any(Function.class));
 
         assertThrows(
                 CfnNotFoundException.class,
@@ -246,10 +248,22 @@ public class UpdateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new AccessDeniedException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any(Function.class));
 
         assertThrows(
                 CfnAccessDeniedException.class,
+                () -> handler.handleRequest(proxy, request, null, logger));
+    }
+
+    @Test
+    public void updateDatabaseShouldThrowWhenInvalidEndpointException() {
+        final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
+
+        doThrow(new InvalidEndpointException("Test exception"))
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any(Function.class));
+
+        assertThrows(
+                CfnInvalidRequestException.class,
                 () -> handler.handleRequest(proxy, request, null, logger));
     }
 
@@ -259,7 +273,6 @@ public class UpdateHandlerTest {
                         .databaseName(TEST_DATABASE_NAME)
                         .kmsKeyId(TEST_KMS_KEY_ID)
                         .tags(Arrays.asList(
-                                Tag.builder().key(TEST_TAG_KEY_1).value(TEST_TAG_VALUE_1).build(),
                                 Tag.builder().key(TEST_TAG_KEY_2).value(TEST_TAG_VALUE_2_NEW).build(),
                                 Tag.builder().key(TEST_TAG_KEY_3).value(TEST_TAG_VALUE_3).build()))
                         .build();

@@ -17,6 +17,7 @@ import com.amazonaws.services.timestreamwrite.model.AccessDeniedException;
 import com.amazonaws.services.timestreamwrite.model.DeleteTableRequest;
 import com.amazonaws.services.timestreamwrite.model.DescribeTableRequest;
 import com.amazonaws.services.timestreamwrite.model.InternalServerException;
+import com.amazonaws.services.timestreamwrite.model.InvalidEndpointException;
 import com.amazonaws.services.timestreamwrite.model.ResourceNotFoundException;
 import com.amazonaws.services.timestreamwrite.model.ThrottlingException;
 import com.amazonaws.services.timestreamwrite.model.ValidationException;
@@ -79,7 +80,7 @@ public class DeleteHandler extends BaseHandler<CallbackContext> {
             throw new CfnInternalFailureException(ex);
         } catch (ThrottlingException ex) {
             throw new CfnThrottlingException(DELETE_TABLE, ex);
-        } catch (ValidationException ex) {
+        } catch (ValidationException | InvalidEndpointException ex) {
             throw new CfnInvalidRequestException(request.toString(), ex);
         } catch (ResourceNotFoundException ex) {
             // could be either database does not exist or table does not exist.

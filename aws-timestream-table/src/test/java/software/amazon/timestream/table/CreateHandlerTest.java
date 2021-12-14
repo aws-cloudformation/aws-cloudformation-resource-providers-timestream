@@ -1,6 +1,7 @@
 package software.amazon.timestream.table;
 
 import java.util.Arrays;
+import java.util.function.Function;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,7 @@ import com.amazonaws.services.timestreamwrite.model.DescribeEndpointsRequest;
 import com.amazonaws.services.timestreamwrite.model.DescribeEndpointsResult;
 import com.amazonaws.services.timestreamwrite.model.Endpoint;
 import com.amazonaws.services.timestreamwrite.model.InternalServerException;
+import com.amazonaws.services.timestreamwrite.model.InvalidEndpointException;
 import com.amazonaws.services.timestreamwrite.model.ResourceNotFoundException;
 import com.amazonaws.services.timestreamwrite.model.ServiceQuotaExceededException;
 import com.amazonaws.services.timestreamwrite.model.Table;
@@ -73,7 +75,7 @@ public class CreateHandlerTest {
     public void setup() {
         proxy = mock(AmazonWebServicesClientProxy.class);
         doReturn(new DescribeEndpointsResult().withEndpoints(new Endpoint().withAddress("endpoint")))
-                .when(proxy).injectCredentialsAndInvoke(any(DescribeEndpointsRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeEndpointsRequest.class), any(Function.class));
         logger = mock(Logger.class);
     }
 
@@ -86,10 +88,10 @@ public class CreateHandlerTest {
                         .withTableName(TEST_TABLE_NAME)
                         .withRetentionProperties(
                                 RetentionPropertiesModelConverter.convert(TEST_RETENTION_PROPERTIES))))
-                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any(Function.class));
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-                = handler.handleRequest(proxy, request, null, logger);
+            = handler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -107,7 +109,7 @@ public class CreateHandlerTest {
                         .withRetentionProperties(new com.amazonaws.services.timestreamwrite.model.RetentionProperties()
                                 .withMagneticStoreRetentionPeriodInDays(7L)
                                 .withMemoryStoreRetentionPeriodInHours(12L));
-        verify(proxy).injectCredentialsAndInvoke(eq(expectedCreateTableRequest), any());
+        verify(proxy).injectCredentialsAndInvoke(eq(expectedCreateTableRequest), any(Function.class));
     }
 
     @Test
@@ -119,7 +121,7 @@ public class CreateHandlerTest {
                         .withTableName(TEST_TABLE_NAME)
                         .withRetentionProperties(
                                 RetentionPropertiesModelConverter.convert(TEST_RETENTION_PROPERTIES))))
-                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any(Function.class));
 
         final ProgressEvent<ResourceModel, CallbackContext> response
                 = handler.handleRequest(proxy, request, null, logger);
@@ -132,22 +134,8 @@ public class CreateHandlerTest {
         assertThat(response.getResourceModels()).isNull();
         assertThat(response.getMessage()).isNull();
         assertThat(response.getErrorCode()).isNull();
-
-        final CreateTableRequest expectedCreateTableRequest =
-                new CreateTableRequest()
-                        .withDatabaseName(TEST_DATABASE_NAME)
-                        .withTableName(TEST_TABLE_NAME)
-                        .withRetentionProperties(new com.amazonaws.services.timestreamwrite.model.RetentionProperties()
-                                .withMagneticStoreRetentionPeriodInDays(7L)
-                                .withMemoryStoreRetentionPeriodInHours(12L))
-                        .withTags(
-                                new com.amazonaws.services.timestreamwrite.model.Tag()
-                                        .withKey(TEST_TAG_KEY_1).withValue(TEST_TAG_VALUE_1),
-                                new com.amazonaws.services.timestreamwrite.model.Tag()
-                                        .withKey(TEST_TAG_KEY_2).withValue(TEST_TAG_VALUE_2),
-                                new com.amazonaws.services.timestreamwrite.model.Tag()
-                                        .withKey(TEST_TAG_KEY_3).withValue(TEST_TAG_VALUE_3));
-        verify(proxy).injectCredentialsAndInvoke(eq(expectedCreateTableRequest), any());
+        
+        verify(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any(Function.class));
     }
 
     @Test
@@ -160,7 +148,7 @@ public class CreateHandlerTest {
                         .withTableName(TEST_TABLE_NAME)
                         .withRetentionProperties(
                                 RetentionPropertiesModelConverter.convert(TEST_RETENTION_PROPERTIES))))
-                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any(Function.class));
 
         final ProgressEvent<ResourceModel, CallbackContext> response
                 = handler.handleRequest(proxy, request, null, logger);
@@ -178,7 +166,7 @@ public class CreateHandlerTest {
                 new CreateTableRequest()
                         .withDatabaseName(TEST_DATABASE_NAME)
                         .withTableName(TEST_TABLE_NAME);
-        verify(proxy).injectCredentialsAndInvoke(eq(expectedCreateTableRequest), any());
+        verify(proxy).injectCredentialsAndInvoke(eq(expectedCreateTableRequest), any(Function.class));
     }
 
     @Test
@@ -190,7 +178,7 @@ public class CreateHandlerTest {
                         .withTableName(TEST_TABLE_NAME)
                         .withRetentionProperties(
                                 RetentionPropertiesModelConverter.convert(TEST_RETENTION_PROPERTIES))))
-                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any(Function.class));
 
         final ProgressEvent<ResourceModel, CallbackContext> response
                 = handler.handleRequest(proxy, request, null, logger);
@@ -212,7 +200,7 @@ public class CreateHandlerTest {
                         .withRetentionProperties(new com.amazonaws.services.timestreamwrite.model.RetentionProperties()
                                 .withMagneticStoreRetentionPeriodInDays(7L)
                                 .withMemoryStoreRetentionPeriodInHours(12L));
-        verify(proxy).injectCredentialsAndInvoke(eq(expectedCreateTableRequest), any());
+        verify(proxy).injectCredentialsAndInvoke(eq(expectedCreateTableRequest), any(Function.class));
     }
 
     /*
@@ -223,7 +211,7 @@ public class CreateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new ConflictException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any(Function.class));
 
         assertThrows(
                 CfnAlreadyExistsException.class,
@@ -235,7 +223,7 @@ public class CreateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new ResourceNotFoundException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any(Function.class));
 
         assertThrows(
                 CfnNotFoundException.class,
@@ -247,7 +235,7 @@ public class CreateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new ValidationException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any(Function.class));
 
         assertThrows(
                 CfnInvalidRequestException.class,
@@ -259,7 +247,7 @@ public class CreateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new AccessDeniedException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any(Function.class));
 
         assertThrows(
                 CfnAccessDeniedException.class,
@@ -271,7 +259,7 @@ public class CreateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new ServiceQuotaExceededException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any(Function.class));
 
         assertThrows(
                 CfnServiceLimitExceededException.class,
@@ -283,7 +271,7 @@ public class CreateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new ThrottlingException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any(Function.class));
 
         assertThrows(
                 CfnThrottlingException.class,
@@ -295,10 +283,22 @@ public class CreateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new InternalServerException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any(Function.class));
 
         assertThrows(
                 CfnInternalFailureException.class,
+                () -> handler.handleRequest(proxy, request, null, logger));
+    }
+
+    @Test
+    public void createTableShouldThrowWhenInvalidEndpointException() {
+        final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
+
+        doThrow(new InvalidEndpointException("Test exception"))
+                .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any(Function.class));
+
+        assertThrows(
+                CfnInvalidRequestException.class,
                 () -> handler.handleRequest(proxy, request, null, logger));
     }
 
@@ -310,8 +310,8 @@ public class CreateHandlerTest {
                         .retentionProperties(TEST_RETENTION_PROPERTIES)
                         .build();
         return ResourceHandlerRequest.<ResourceModel>builder()
-                .desiredResourceState(model)
-                .build();
+            .desiredResourceState(model)
+            .build();
     }
 
     private ResourceHandlerRequest<ResourceModel> givenAResourceHandlerRequestWithTags() {

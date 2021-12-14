@@ -19,6 +19,7 @@ import com.amazonaws.services.timestreamwrite.model.AccessDeniedException;
 import com.amazonaws.services.timestreamwrite.model.DescribeTableRequest;
 import com.amazonaws.services.timestreamwrite.model.DescribeTableResult;
 import com.amazonaws.services.timestreamwrite.model.InternalServerException;
+import com.amazonaws.services.timestreamwrite.model.InvalidEndpointException;
 import com.amazonaws.services.timestreamwrite.model.ListTagsForResourceRequest;
 import com.amazonaws.services.timestreamwrite.model.ListTagsForResourceResult;
 import com.amazonaws.services.timestreamwrite.model.ResourceNotFoundException;
@@ -34,10 +35,10 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
 
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
-            final AmazonWebServicesClientProxy proxy,
-            final ResourceHandlerRequest<ResourceModel> request,
-            final CallbackContext callbackContext,
-            final Logger logger) {
+        final AmazonWebServicesClientProxy proxy,
+        final ResourceHandlerRequest<ResourceModel> request,
+        final CallbackContext callbackContext,
+        final Logger logger) {
 
         timestreamClient = TimestreamClientFactory.get(proxy, logger);
         this.proxy = proxy;
@@ -54,13 +55,14 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
 
             final Table tableRecord = describeTableResult.getTable();
             final List<Tag> tags = getTags(tableRecord.getArn());
-            model.setTags(tags.isEmpty() ? null : tags);
+            model.setTags(tags == null || tags.isEmpty() ? null : tags);
             model.setArn(tableRecord.getArn());
+            model.setName(tableRecord.getTableName());
             result = model;
         } catch (ResourceNotFoundException ex) {
             // could be either database does not exist or table does not exist.
             throw new CfnNotFoundException(ex);
-        } catch (ValidationException ex) {
+        } catch (ValidationException | InvalidEndpointException ex) {
             throw new CfnInvalidRequestException(request.toString(), ex);
         } catch (AccessDeniedException ex) {
             throw new CfnAccessDeniedException(DESCRIBE_TABLE, ex);
@@ -71,9 +73,9 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
         }
 
         return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                .resourceModel(result)
-                .status(OperationStatus.SUCCESS)
-                .build();
+            .resourceModel(result)
+            .status(OperationStatus.SUCCESS)
+            .build();
     }
 
     private List<Tag> getTags(final String arn) {
@@ -82,6 +84,10 @@ public class ReadHandler extends BaseHandler<CallbackContext> {
         final ListTagsForResourceResult listTagsForResourceResult =
                 this.proxy.injectCredentialsAndInvoke(
                         listTagsForResourceRequest, timestreamClient::listTagsForResource);
+
+        if (listTagsForResourceResult.getTags() == null) {
+            return null;
+        }
 
         return listTagsForResourceResult.getTags().stream()
                 .map(tag -> Tag.builder().key(tag.getKey()).value(tag.getValue()).build())

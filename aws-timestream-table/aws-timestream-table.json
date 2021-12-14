@@ -8,16 +8,25 @@
             "type": "object",
             "properties": {
                 "Key": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
                 },
                 "Value": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 0,
+                    "maxLength": 256
                 }
-            }
+            },
+            "additionalProperties": false
         }
     },
     "properties": {
         "Arn": {
+            "type": "string"
+        },
+        "Name": {
+            "description": "The table name exposed as a read-only attribute.",
             "type": "string"
         },
         "DatabaseName": {
@@ -42,11 +51,14 @@
                     "description": "The duration for which data must be stored in the magnetic store.",
                     "type": "string"
                 }
-            }
+            },
+            "additionalProperties": false
         },
         "Tags": {
             "description": "An array of key-value pairs to apply to this resource.",
             "type": "array",
+            "maxItems": 200,
+            "insertionOrder": false,
             "items": {
                 "$ref": "#/definitions/Tag"
             }
@@ -66,11 +78,7 @@
     ],
     "readOnlyProperties": [
         "/properties/Arn",
-        "/properties/DatabaseName",
-        "/properties/TableName"
-    ],
-    "writeOnlyProperties": [
-        "/properties/RetentionProperties"
+        "/properties/Name"
     ],
     "handlers": {
         "create": {

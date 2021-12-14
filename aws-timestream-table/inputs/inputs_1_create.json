@@ -1,8 +1,14 @@
 {
-    "DatabaseName": "TestDatabaseNameForTableContractTest",
-    "TableName": "TestTableNameForTableContractTest",
-    "RetentionProperties": {
-        "MemoryStoreRetentionPeriodInHours": 48,
-        "MagneticStoreRetentionPeriodInDays": 3650
+  "DatabaseName": "{{TableContractTestsDbNameExport}}",
+  "TableName": "TestTableNameForTableContractTest",
+  "RetentionProperties": {
+    "MemoryStoreRetentionPeriodInHours": "48",
+    "MagneticStoreRetentionPeriodInDays": "3650"
+  },
+  "Tags": [
+    {
+      "Key" : "testKey",
+      "Value": "testValue"
     }
+  ]
 }

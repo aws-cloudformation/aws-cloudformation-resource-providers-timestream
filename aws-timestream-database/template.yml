@@ -4,21 +4,20 @@ Description: AWS SAM template for the AWS::Timestream::Database resource type
 
 Globals:
   Function:
-    Timeout: 180  # docker start-up times can be long for SAM CLI
-    MemorySize: 256
+    Timeout: 60  # docker start-up times can be long for SAM CLI
+    MemorySize: 8192 # uncomment if you run into OutOfMemoryError
 
 Resources:
   TypeFunction:
     Type: AWS::Serverless::Function
     Properties:
       Handler: software.amazon.timestream.database.HandlerWrapper::handleRequest
-      Runtime: java8
-      CodeUri: ./target/aws-timestream-database-handler-1.0-SNAPSHOT.jar
+      Runtime: java11
+      CodeUri: ./target/aws-timestream-database-1.0.jar
 
   TestEntrypoint:
     Type: AWS::Serverless::Function
     Properties:
       Handler: software.amazon.timestream.database.HandlerWrapper::testEntrypoint
-      Runtime: java8
-      CodeUri: ./target/aws-timestream-database-handler-1.0-SNAPSHOT.jar
-
+      Runtime: java11
+      CodeUri: ./target/aws-timestream-database-1.0.jar

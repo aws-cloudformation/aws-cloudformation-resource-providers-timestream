@@ -1,6 +1,7 @@
 package software.amazon.timestream.table;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import software.amazon.cloudformation.exceptions.CfnAccessDeniedException;
@@ -23,6 +24,7 @@ import com.amazonaws.services.timestreamwrite.model.ConflictException;
 import com.amazonaws.services.timestreamwrite.model.CreateTableRequest;
 import com.amazonaws.services.timestreamwrite.model.CreateTableResult;
 import com.amazonaws.services.timestreamwrite.model.InternalServerException;
+import com.amazonaws.services.timestreamwrite.model.InvalidEndpointException;
 import com.amazonaws.services.timestreamwrite.model.ResourceNotFoundException;
 import com.amazonaws.services.timestreamwrite.model.ServiceQuotaExceededException;
 import com.amazonaws.services.timestreamwrite.model.ThrottlingException;
@@ -43,10 +45,10 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
 
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
-            final AmazonWebServicesClientProxy proxy,
-            final ResourceHandlerRequest<ResourceModel> request,
-            final CallbackContext callbackContext,
-            final Logger logger) {
+        final AmazonWebServicesClientProxy proxy,
+        final ResourceHandlerRequest<ResourceModel> request,
+        final CallbackContext callbackContext,
+        final Logger logger) {
 
         timestreamClient = TimestreamClientFactory.get(proxy, logger);
         this.proxy = proxy;
@@ -71,13 +73,13 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
                         .withTableName(model.getTableName())
                         .withRetentionProperties(RetentionPropertiesModelConverter.convert(model.getRetentionProperties()));
 
-        // tag on create
-        final List<Tag> tags = model.getTags();
-        if (tags != null && !tags.isEmpty()) {
+        final Set<Tag> tags = TagHelper.convertToSet(
+                TagHelper.generateTagsForCreate(model, request));
+        if (tags != null & !tags.isEmpty()) {
             createTableRequest.withTags(tags.stream().map(
-                    tag -> new com.amazonaws.services.timestreamwrite.model.Tag()
-                            .withKey(tag.getKey())
-                            .withValue(tag.getValue()))
+                            tag -> new com.amazonaws.services.timestreamwrite.model.Tag()
+                                    .withKey(tag.getKey())
+                                    .withValue(tag.getValue()))
                     .collect(Collectors.toList()));
         }
 
@@ -87,7 +89,7 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
             model.setArn(result.getTable().getArn());
         } catch (ConflictException ex) {
             throw new CfnAlreadyExistsException(ResourceModel.TYPE_NAME, model.getTableName(), ex);
-        } catch (ValidationException ex) {
+        } catch (ValidationException | InvalidEndpointException ex) {
             throw new CfnInvalidRequestException(request.toString(), ex);
         } catch (AccessDeniedException ex) {
             throw new CfnAccessDeniedException(CREATE_TABLE, ex);
@@ -102,8 +104,8 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
         }
 
         return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                .resourceModel(model)
-                .status(OperationStatus.SUCCESS)
-                .build();
+            .resourceModel(model)
+            .status(OperationStatus.SUCCESS)
+            .build();
     }
 }

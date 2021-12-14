@@ -17,6 +17,7 @@ import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import com.amazonaws.services.timestreamwrite.AmazonTimestreamWrite;
 import com.amazonaws.services.timestreamwrite.model.AccessDeniedException;
 import com.amazonaws.services.timestreamwrite.model.InternalServerException;
+import com.amazonaws.services.timestreamwrite.model.InvalidEndpointException;
 import com.amazonaws.services.timestreamwrite.model.ListDatabasesRequest;
 import com.amazonaws.services.timestreamwrite.model.ListDatabasesResult;
 import com.amazonaws.services.timestreamwrite.model.ThrottlingException;
@@ -35,10 +36,10 @@ public class ListHandler extends BaseHandler<CallbackContext> {
 
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
-            final AmazonWebServicesClientProxy proxy,
-            final ResourceHandlerRequest<ResourceModel> request,
-            final CallbackContext callbackContext,
-            final Logger logger) {
+        final AmazonWebServicesClientProxy proxy,
+        final ResourceHandlerRequest<ResourceModel> request,
+        final CallbackContext callbackContext,
+        final Logger logger) {
 
         timestreamClient = TimestreamClientFactory.get(proxy, logger);
         this.proxy = proxy;
@@ -52,7 +53,7 @@ public class ListHandler extends BaseHandler<CallbackContext> {
             throw new CfnInternalFailureException(ex);
         } catch (ThrottlingException ex) {
             throw new CfnThrottlingException(LIST_DATABASES, ex);
-        } catch (ValidationException ex) {
+        } catch (ValidationException | InvalidEndpointException ex) {
             throw new CfnInvalidRequestException(request.toString(), ex);
         } catch (AccessDeniedException ex) {
             throw new CfnAccessDeniedException(LIST_DATABASES, ex);
@@ -67,9 +68,9 @@ public class ListHandler extends BaseHandler<CallbackContext> {
                         .collect(Collectors.toList());
 
         return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                .resourceModels(models)
-                .nextToken(result.getNextToken())
-                .status(OperationStatus.SUCCESS)
-                .build();
+            .resourceModels(models)
+            .nextToken(result.getNextToken())
+            .status(OperationStatus.SUCCESS)
+            .build();
     }
 }

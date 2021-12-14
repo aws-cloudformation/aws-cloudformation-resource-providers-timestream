@@ -1,0 +1,25 @@
+{
+    "artifact_type": "RESOURCE",
+    "typeName": "AWS::Timestream::ScheduledQuery",
+    "language": "java",
+    "runtime": "java11",
+    "entrypoint": "software.amazon.timestream.scheduledquery.HandlerWrapper::handleRequest",
+    "testEntrypoint": "software.amazon.timestream.scheduledquery.HandlerWrapper::testEntrypoint",
+    "settings": {
+        "version": false,
+        "subparser_name": null,
+        "verbose": 0,
+        "force": false,
+        "type_name": null,
+        "artifact_type": null,
+        "namespace": [
+            "software",
+            "amazon",
+            "timestream",
+            "scheduledquery"
+        ],
+        "codegen_template_path": "default",
+        "protocolVersion": "2.0.0"
+    },
+    "executableEntrypoint": "software.amazon.timestream.scheduledquery.HandlerWrapperExecutable"
+}
