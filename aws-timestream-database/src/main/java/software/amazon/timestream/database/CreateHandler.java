@@ -38,7 +38,7 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
     private static final String CREATE_DATABASE = "CreateDatabase";
     private static final String QUOTE_MESSAGE = "Limit for number of databases per account exceeded.";
 
-    private static final int DATABASE_NAME_MAX_LENGTH = 64;
+    private static final int DATABASE_NAME_MAX_LENGTH = 256;
 
     private AmazonWebServicesClientProxy proxy;
     private AmazonTimestreamWrite timestreamClient;
