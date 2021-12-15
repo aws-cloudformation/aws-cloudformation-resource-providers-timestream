@@ -12,6 +12,8 @@ To declare this entity in your AWS CloudFormation template, use the following sy
 {
     "Type" : "AWS::Timestream::Table",
     "Properties" : {
+        "<a href="#databasename" title="DatabaseName">DatabaseName</a>" : <i>String</i>,
+        "<a href="#tablename" title="TableName">TableName</a>" : <i>String</i>,
         "<a href="#retentionproperties" title="RetentionProperties">RetentionProperties</a>" : <i><a href="retentionproperties.md">RetentionProperties</a></i>,
         "<a href="#tags" title="Tags">Tags</a>" : <i>[ <a href="tag.md">Tag</a>, ... ]</i>
     }
@@ -23,12 +25,38 @@ To declare this entity in your AWS CloudFormation template, use the following sy
 <pre>
 Type: AWS::Timestream::Table
 Properties:
+    <a href="#databasename" title="DatabaseName">DatabaseName</a>: <i>String</i>
+    <a href="#tablename" title="TableName">TableName</a>: <i>String</i>
     <a href="#retentionproperties" title="RetentionProperties">RetentionProperties</a>: <i><a href="retentionproperties.md">RetentionProperties</a></i>
     <a href="#tags" title="Tags">Tags</a>: <i>
       - <a href="tag.md">Tag</a></i>
 </pre>
 
 ## Properties
+
+#### DatabaseName
+
+The name for the database which the table to be created belongs to.
+
+_Required_: Yes
+
+_Type_: String
+
+_Pattern_: <code>^[a-zA-Z0-9_.-]{3,64}$</code>
+
+_Update requires_: [Replacement](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-replacement)
+
+#### TableName
+
+The name for the table. If you don't specify a name, AWS CloudFormation generates a unique physical ID and uses that ID for the table name.
+
+_Required_: No
+
+_Type_: String
+
+_Pattern_: <code>^[a-zA-Z0-9_.-]{3,64}$</code>
+
+_Update requires_: [Replacement](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-replacement)
 
 #### RetentionProperties
 
@@ -62,11 +90,7 @@ For more information about using the `Fn::GetAtt` intrinsic function, see [Fn::G
 
 Returns the <code>Arn</code> value.
 
-#### DatabaseName
+#### Name
 
-The name for the database which the table to be created belongs to.
-
-#### TableName
-
-The name for the table. If you don't specify a name, AWS CloudFormation generates a unique physical ID and uses that ID for the table name.
+The table name exposed as a read-only attribute.
 

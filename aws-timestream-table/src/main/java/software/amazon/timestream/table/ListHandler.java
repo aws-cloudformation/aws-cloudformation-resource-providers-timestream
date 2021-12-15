@@ -17,6 +17,7 @@ import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import com.amazonaws.services.timestreamwrite.AmazonTimestreamWrite;
 import com.amazonaws.services.timestreamwrite.model.AccessDeniedException;
 import com.amazonaws.services.timestreamwrite.model.InternalServerException;
+import com.amazonaws.services.timestreamwrite.model.InvalidEndpointException;
 import com.amazonaws.services.timestreamwrite.model.ListTablesRequest;
 import com.amazonaws.services.timestreamwrite.model.ListTablesResult;
 import com.amazonaws.services.timestreamwrite.model.ResourceNotFoundException;
@@ -37,10 +38,10 @@ public class ListHandler extends BaseHandler<CallbackContext> {
 
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
-            final AmazonWebServicesClientProxy proxy,
-            final ResourceHandlerRequest<ResourceModel> request,
-            final CallbackContext callbackContext,
-            final Logger logger) {
+        final AmazonWebServicesClientProxy proxy,
+        final ResourceHandlerRequest<ResourceModel> request,
+        final CallbackContext callbackContext,
+        final Logger logger) {
 
         timestreamClient = TimestreamClientFactory.get(proxy, logger);
         this.proxy = proxy;
@@ -58,7 +59,7 @@ public class ListHandler extends BaseHandler<CallbackContext> {
             throw new CfnInternalFailureException(ex);
         } catch (ThrottlingException ex) {
             throw new CfnThrottlingException(LIST_TABLES, ex);
-        } catch (ValidationException ex) {
+        } catch (ValidationException | InvalidEndpointException ex) {
             throw new CfnInvalidRequestException(request.toString(), ex);
         } catch (ResourceNotFoundException ex) {
             throw new CfnNotFoundException(DATABASE, request.getDesiredResourceState().getDatabaseName(), ex);
@@ -79,9 +80,9 @@ public class ListHandler extends BaseHandler<CallbackContext> {
                         .collect(Collectors.toList());
 
         return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                .resourceModels(models)
-                .nextToken(result.getNextToken())
-                .status(OperationStatus.SUCCESS)
-                .build();
+            .resourceModels(models)
+            .nextToken(result.getNextToken())
+            .status(OperationStatus.SUCCESS)
+            .build();
     }
 }

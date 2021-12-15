@@ -8,12 +8,17 @@
             "type": "object",
             "properties": {
                 "Key": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
                 },
                 "Value": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 0,
+                    "maxLength": 256
                 }
-            }
+            },
+            "additionalProperties": false
         }
     },
     "properties": {
@@ -34,6 +39,8 @@
         "Tags": {
             "description": "An array of key-value pairs to apply to this resource.",
             "type": "array",
+            "maxItems": 200,
+            "insertionOrder": false,
             "items": {
                 "$ref": "#/definitions/Tag"
             }
@@ -47,11 +54,7 @@
         "/properties/DatabaseName"
     ],
     "readOnlyProperties": [
-        "/properties/Arn",
-        "/properties/DatabaseName"
-    ],
-    "writeOnlyProperties": [
-        "/properties/KmsKeyId"
+        "/properties/Arn"
     ],
     "handlers": {
         "create": {

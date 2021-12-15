@@ -25,11 +25,14 @@ import com.amazonaws.services.timestreamwrite.model.DescribeTableRequest;
 import com.amazonaws.services.timestreamwrite.model.DescribeTableResult;
 import com.amazonaws.services.timestreamwrite.model.Endpoint;
 import com.amazonaws.services.timestreamwrite.model.InternalServerException;
+import com.amazonaws.services.timestreamwrite.model.InvalidEndpointException;
 import com.amazonaws.services.timestreamwrite.model.ResourceNotFoundException;
 import com.amazonaws.services.timestreamwrite.model.RetentionProperties;
 import com.amazonaws.services.timestreamwrite.model.Table;
 import com.amazonaws.services.timestreamwrite.model.ThrottlingException;
 import com.amazonaws.services.timestreamwrite.model.ValidationException;
+
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -58,18 +61,18 @@ public class DeleteHandlerTest {
     public void setup() {
         proxy = mock(AmazonWebServicesClientProxy.class);
         doReturn(new DescribeEndpointsResult().withEndpoints(new Endpoint().withAddress("endpoint")))
-                .when(proxy).injectCredentialsAndInvoke(any(DescribeEndpointsRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeEndpointsRequest.class), any(Function.class));
         logger = mock(Logger.class);
     }
 
     @Test
     public void deleteTableShouldSucceedSimply() {
-        doReturn(null).when(proxy).injectCredentialsAndInvoke(any(DeleteTableRequest.class), any());
-        doThrow(new ResourceNotFoundException("Test Message")).when(proxy).injectCredentialsAndInvoke(any(DescribeTableRequest.class),any());
+        doReturn(null).when(proxy).injectCredentialsAndInvoke(any(DeleteTableRequest.class), any(Function.class));
+        doThrow(new ResourceNotFoundException("Test Message")).when(proxy).injectCredentialsAndInvoke(any(DescribeTableRequest.class), any(Function.class));
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-                = handler.handleRequest(proxy, request, null, logger);
+            = handler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -82,23 +85,23 @@ public class DeleteHandlerTest {
 
         final DeleteTableRequest expectedDeleteTableRequest =
                 new DeleteTableRequest().withDatabaseName(TEST_DATABASE_NAME).withTableName(TEST_TABLE_NAME);
-        verify(proxy).injectCredentialsAndInvoke(eq(expectedDeleteTableRequest), any());
+        verify(proxy).injectCredentialsAndInvoke(eq(expectedDeleteTableRequest), any(Function.class));
     }
 
     @Test
     public void deleteTableShouldSucceedAfterWait() {
-        doReturn(null).when(proxy).injectCredentialsAndInvoke(any(DeleteTableRequest.class), any());
+        doReturn(null).when(proxy).injectCredentialsAndInvoke(any(DeleteTableRequest.class), any(Function.class));
         DescribeTableResult tableResponse = new DescribeTableResult()
                 .withTable(new Table()
-                        .withDatabaseName(TEST_DATABASE_NAME)
-                        .withTableName(TEST_TABLE_NAME)
-                        .withRetentionProperties(new RetentionProperties()
-                                .withMemoryStoreRetentionPeriodInHours(1L)
-                                .withMagneticStoreRetentionPeriodInDays(2L))
-                        .withTableStatus("DELETE_IN_PROGRESS"));
+                          .withDatabaseName(TEST_DATABASE_NAME)
+                          .withTableName(TEST_TABLE_NAME)
+                          .withRetentionProperties(new RetentionProperties()
+                                                  .withMemoryStoreRetentionPeriodInHours(1L)
+                                                  .withMagneticStoreRetentionPeriodInDays(2L))
+                          .withTableStatus("DELETE_IN_PROGRESS"));
 
         doReturn(tableResponse).doThrow(new ResourceNotFoundException("Test Message"))
-                .when(proxy).injectCredentialsAndInvoke(any(DescribeTableRequest.class),any());
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeTableRequest.class),any(Function.class));
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
 
@@ -117,7 +120,7 @@ public class DeleteHandlerTest {
         final DeleteTableRequest expectedDeleteTableRequest =
                 new DeleteTableRequest().withDatabaseName(TEST_DATABASE_NAME).withTableName(TEST_TABLE_NAME);
 
-        verify(proxy).injectCredentialsAndInvoke(eq(expectedDeleteTableRequest), any());
+        verify(proxy).injectCredentialsAndInvoke(eq(expectedDeleteTableRequest), any(Function.class));
 
         response = handler.handleRequest(proxy, request, response.getCallbackContext(), logger);
 
@@ -140,7 +143,7 @@ public class DeleteHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new ResourceNotFoundException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(DeleteTableRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DeleteTableRequest.class), any(Function.class));
 
         assertThrows(
                 CfnNotFoundException.class,
@@ -152,7 +155,7 @@ public class DeleteHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new ValidationException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(DeleteTableRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DeleteTableRequest.class), any(Function.class));
 
         assertThrows(
                 CfnInvalidRequestException.class,
@@ -164,7 +167,7 @@ public class DeleteHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new AccessDeniedException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(DeleteTableRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DeleteTableRequest.class), any(Function.class));
 
         assertThrows(
                 CfnAccessDeniedException.class,
@@ -176,7 +179,7 @@ public class DeleteHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new InternalServerException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(DeleteTableRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DeleteTableRequest.class), any(Function.class));
 
         assertThrows(
                 CfnInternalFailureException.class,
@@ -188,10 +191,22 @@ public class DeleteHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new ThrottlingException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(DeleteTableRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DeleteTableRequest.class), any(Function.class));
 
         assertThrows(
                 CfnThrottlingException.class,
+                () -> handler.handleRequest(proxy, request, null, logger));
+    }
+
+    @Test
+    public void deleteTableShouldThrowWhenInvalidEndpointException() {
+        final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
+
+        doThrow(new InvalidEndpointException("Test exception"))
+                .when(proxy).injectCredentialsAndInvoke(any(DeleteTableRequest.class), any(Function.class));
+
+        assertThrows(
+                CfnInvalidRequestException.class,
                 () -> handler.handleRequest(proxy, request, null, logger));
     }
 
@@ -200,7 +215,7 @@ public class DeleteHandlerTest {
                 ResourceModel.builder().databaseName(TEST_DATABASE_NAME).tableName(TEST_TABLE_NAME).build();
 
         return ResourceHandlerRequest.<ResourceModel>builder()
-                .desiredResourceState(model)
-                .build();
+            .desiredResourceState(model)
+            .build();
     }
 }

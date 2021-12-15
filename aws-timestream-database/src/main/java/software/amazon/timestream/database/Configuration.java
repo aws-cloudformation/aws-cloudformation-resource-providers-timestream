@@ -2,7 +2,7 @@ package software.amazon.timestream.database;
 
 class Configuration extends BaseConfiguration {
 
-    public Configuration() {
+    Configuration() {
         super("aws-timestream-database.json");
     }
 }

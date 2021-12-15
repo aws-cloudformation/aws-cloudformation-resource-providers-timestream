@@ -1,0 +1,51 @@
+{
+  "ScheduledQueryName": "TestScheduledQueryName",
+  "QueryString": "SELECT now() as time, 'TestMeasure' as testMeasureName, 'TestDimension' as testDimensionName",
+  "ScheduleConfiguration": {
+    "ScheduleExpression": "cron(0/5 * * * ? *)"
+  },
+  "NotificationConfiguration": {
+    "SnsConfiguration": {
+      "TopicArn": "{{SQContractTestsTopicArnExport}}"
+    }
+  },
+  "ScheduledQueryExecutionRoleArn": "{{SQContractTestsExecutionRoleArnExport}}",
+  "TargetConfiguration": {
+    "TimestreamConfiguration": {
+      "DatabaseName": "{{SQContractTestsDbNameExport}}",
+      "TableName": "{{SQContractTestsTableNameExport}}",
+      "TimeColumn": "time",
+      "DimensionMappings": [
+        {
+          "Name": "testDimensionName",
+          "DimensionValueType": "VARCHAR"
+        }
+      ],
+      "MixedMeasureMappings": [
+        {
+          "TargetMeasureName": "testMeasureName",
+          "SourceColumn": "testMeasureName",
+          "MeasureValueType": "VARCHAR"
+        }
+      ]
+    }
+  },
+  "ErrorReportConfiguration": {
+    "S3Configuration": {
+      "BucketName": "{{SQContractTestsS3BucketNameExport}}",
+      "ObjectKeyPrefix": "TestObjectKeyPrefix",
+      "EncryptionOption": "SSE_S3"
+    }
+  },
+  "KmsKeyId": "{{SQContractTestsKMSKeyArnExport}}",
+  "Tags": [
+    {
+      "Key": "testKey1",
+      "Value": "testValue1new"
+    },
+    {
+      "Key": "testKey3",
+      "Value": "testValue3"
+    }
+  ]
+}

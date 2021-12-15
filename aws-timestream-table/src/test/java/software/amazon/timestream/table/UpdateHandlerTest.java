@@ -1,6 +1,7 @@
 package software.amazon.timestream.table;
 
 import java.util.Arrays;
+import java.util.function.Function;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ import com.amazonaws.services.timestreamwrite.model.DescribeEndpointsRequest;
 import com.amazonaws.services.timestreamwrite.model.DescribeEndpointsResult;
 import com.amazonaws.services.timestreamwrite.model.Endpoint;
 import com.amazonaws.services.timestreamwrite.model.InternalServerException;
+import com.amazonaws.services.timestreamwrite.model.InvalidEndpointException;
 import com.amazonaws.services.timestreamwrite.model.ResourceNotFoundException;
 import com.amazonaws.services.timestreamwrite.model.Table;
 import com.amazonaws.services.timestreamwrite.model.TagResourceRequest;
@@ -68,7 +70,7 @@ public class UpdateHandlerTest {
     public void setup() {
         proxy = mock(AmazonWebServicesClientProxy.class);
         doReturn(new DescribeEndpointsResult().withEndpoints(new Endpoint().withAddress("endpoint")))
-                .when(proxy).injectCredentialsAndInvoke(any(DescribeEndpointsRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeEndpointsRequest.class), any(Function.class));
         logger = mock(Logger.class);
     }
 
@@ -77,10 +79,10 @@ public class UpdateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
         final Table record = new Table().withDatabaseName(TEST_DATABASE_NAME).withTableName(TEST_TABLE_NAME).withArn(TEST_ARN);
         final UpdateTableResult updateTableResult = new UpdateTableResult().withTable(record);
-        doReturn(updateTableResult).when(proxy).injectCredentialsAndInvoke(any(UpdateTableRequest.class), any());
+        doReturn(updateTableResult).when(proxy).injectCredentialsAndInvoke(any(UpdateTableRequest.class), any(Function.class));
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-                = handler.handleRequest(proxy, request, null, logger);
+            = handler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -106,11 +108,11 @@ public class UpdateHandlerTest {
                         new com.amazonaws.services.timestreamwrite.model.Tag()
                                 .withKey(TEST_TAG_KEY_3).withValue(TEST_TAG_VALUE_3));
         final UntagResourceRequest expectedUntagResourceRequest =
-                new UntagResourceRequest().withResourceARN(TEST_ARN).withTagKeys(TEST_TAG_KEY_2);
+                new UntagResourceRequest().withResourceARN(TEST_ARN).withTagKeys(TEST_TAG_KEY_1);
 
-        verify(proxy).injectCredentialsAndInvoke(eq(expectedUpdateTableRequest), any());
-        verify(proxy).injectCredentialsAndInvoke(eq(expectedTagResourceRequest), any());
-        verify(proxy).injectCredentialsAndInvoke(eq(expectedUntagResourceRequest), any());
+        verify(proxy).injectCredentialsAndInvoke(eq(expectedUpdateTableRequest), any(Function.class));
+        verify(proxy).injectCredentialsAndInvoke(eq(expectedTagResourceRequest), any(Function.class));
+        verify(proxy).injectCredentialsAndInvoke(eq(expectedUntagResourceRequest), any(Function.class));
         verifyNoMoreInteractions(proxy);
     }
 
@@ -122,7 +124,7 @@ public class UpdateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new ResourceNotFoundException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(UpdateTableRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(UpdateTableRequest.class), any(Function.class));
 
         assertThrows(
                 CfnNotFoundException.class,
@@ -134,7 +136,7 @@ public class UpdateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new ValidationException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(UpdateTableRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(UpdateTableRequest.class), any(Function.class));
 
         assertThrows(
                 CfnInvalidRequestException.class,
@@ -146,7 +148,7 @@ public class UpdateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new InternalServerException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(UpdateTableRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(UpdateTableRequest.class), any(Function.class));
 
         assertThrows(
                 CfnInternalFailureException.class,
@@ -158,7 +160,7 @@ public class UpdateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new ThrottlingException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(UpdateTableRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(UpdateTableRequest.class), any(Function.class));
 
         assertThrows(
                 CfnThrottlingException.class,
@@ -170,10 +172,22 @@ public class UpdateHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new AccessDeniedException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(UpdateTableRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(UpdateTableRequest.class), any(Function.class));
 
         assertThrows(
                 CfnAccessDeniedException.class,
+                () -> handler.handleRequest(proxy, request, null, logger));
+    }
+
+    @Test
+    public void updateTableShouldThrowWhenInvalidEndpointException() {
+        final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
+
+        doThrow(new InvalidEndpointException("Test exception"))
+                .when(proxy).injectCredentialsAndInvoke(any(UpdateTableRequest.class), any(Function.class));
+
+        assertThrows(
+                CfnInvalidRequestException.class,
                 () -> handler.handleRequest(proxy, request, null, logger));
     }
 
@@ -187,7 +201,6 @@ public class UpdateHandlerTest {
                                 .magneticStoreRetentionPeriodInDays("14")
                                 .build())
                         .tags(Arrays.asList(
-                                Tag.builder().key(TEST_TAG_KEY_1).value(TEST_TAG_VALUE_1).build(),
                                 Tag.builder().key(TEST_TAG_KEY_2).value(TEST_TAG_VALUE_2_NEW).build(),
                                 Tag.builder().key(TEST_TAG_KEY_3).value(TEST_TAG_VALUE_3).build()))
                         .build();
@@ -205,7 +218,7 @@ public class UpdateHandlerTest {
                                 Tag.builder().key(TEST_TAG_KEY_2).value(TEST_TAG_VALUE_2).build()))
                         .build();
         return ResourceHandlerRequest.<ResourceModel>builder()
-                .desiredResourceState(model).previousResourceState(existingModel)
-                .build();
+            .desiredResourceState(model).previousResourceState(existingModel)
+            .build();
     }
 }

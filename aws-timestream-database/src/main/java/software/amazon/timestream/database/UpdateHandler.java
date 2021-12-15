@@ -1,14 +1,13 @@
 package software.amazon.timestream.database;
 
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.Set;import java.util.stream.Collectors;
 
+import com.amazonaws.services.timestreamwrite.model.TagResourceRequest;
+import com.amazonaws.services.timestreamwrite.model.UntagResourceRequest;
 import org.apache.commons.lang3.StringUtils;
 import software.amazon.cloudformation.exceptions.CfnAccessDeniedException;
-import software.amazon.cloudformation.exceptions.CfnGeneralServiceException;
 import software.amazon.cloudformation.exceptions.CfnInternalFailureException;
 import software.amazon.cloudformation.exceptions.CfnInvalidRequestException;
 import software.amazon.cloudformation.exceptions.CfnNotFoundException;
@@ -25,11 +24,10 @@ import com.amazonaws.services.timestreamwrite.model.AccessDeniedException;
 import com.amazonaws.services.timestreamwrite.model.DescribeDatabaseRequest;
 import com.amazonaws.services.timestreamwrite.model.DescribeDatabaseResult;
 import com.amazonaws.services.timestreamwrite.model.InternalServerException;
+import com.amazonaws.services.timestreamwrite.model.InvalidEndpointException;
 import com.amazonaws.services.timestreamwrite.model.ResourceNotFoundException;
 import com.amazonaws.services.timestreamwrite.model.ServiceQuotaExceededException;
-import com.amazonaws.services.timestreamwrite.model.TagResourceRequest;
 import com.amazonaws.services.timestreamwrite.model.ThrottlingException;
-import com.amazonaws.services.timestreamwrite.model.UntagResourceRequest;
 import com.amazonaws.services.timestreamwrite.model.UpdateDatabaseRequest;
 import com.amazonaws.services.timestreamwrite.model.UpdateDatabaseResult;
 import com.amazonaws.services.timestreamwrite.model.ValidationException;
@@ -39,6 +37,11 @@ import com.google.common.collect.Sets;
 /**
  * Timestream database resource update handler. CloudFormation invokes this handler when the
  * resource is updated as part of a stack update operation.
+ *
+ * Only updates on tagging is allowed for the existing Databases. Otherwise, since Timestream does not support UpdateDatabase
+ * operation, this handler should fail. CF will try deleting and recreating the resource instead.
+ *
+ * https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-replacement
  */
 public class UpdateHandler extends BaseHandler<CallbackContext> {
 
@@ -51,10 +54,10 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
 
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
-            final AmazonWebServicesClientProxy proxy,
-            final ResourceHandlerRequest<ResourceModel> request,
-            final CallbackContext callbackContext,
-            final Logger logger) {
+        final AmazonWebServicesClientProxy proxy,
+        final ResourceHandlerRequest<ResourceModel> request,
+        final CallbackContext callbackContext,
+        final Logger logger) {
 
         timestreamClient = TimestreamClientFactory.get(proxy, logger);
         this.proxy = proxy;
@@ -75,7 +78,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                 throw new CfnInternalFailureException(ex);
             } catch (ThrottlingException ex) {
                 throw new CfnThrottlingException(UPDATE_DATABASE, ex);
-            } catch (ValidationException ex) {
+            } catch (ValidationException | InvalidEndpointException ex) {
                 throw new CfnInvalidRequestException(request.toString(), ex);
             } catch (ResourceNotFoundException ex) {
                 throw new CfnNotFoundException(ex);
@@ -88,13 +91,12 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
 
         // Step 2: Update the tags
 
-        final Set<Tag> currentTags = getTags(existingModel);
-        final Set<Tag> desiredTags = getTags(model);
+        final Map<String, String> desiredTags = TagHelper.getNewDesiredTags(model, request);
+        final Map<String, String> previousTags = TagHelper.getPreviouslyAttachedTags(request);
 
-        // get tags in desired tags but not in existing tags
-        final Set<Tag> tagsToAdd = Sets.difference(desiredTags, currentTags);
-        // get tags in existing tags but not in desired tags
-        final Set<Tag> tagsToRemove = Sets.difference(currentTags, desiredTags);
+        final Set<Tag> tagsToAdd = TagHelper.convertToSet(
+                TagHelper.generateTagsToAdd(previousTags, desiredTags));
+        final Set<String> tagsToRemove = TagHelper.generateTagsToRemove(previousTags, desiredTags);
 
         try {
             final DescribeDatabaseRequest describeDatabaseRequest =
@@ -114,7 +116,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
             throw new CfnInternalFailureException(ex);
         } catch (ThrottlingException ex) {
             throw new CfnThrottlingException(UPDATE_DATABASE, ex);
-        } catch (ValidationException ex) {
+        } catch (ValidationException | InvalidEndpointException ex) {
             throw new CfnInvalidRequestException(request.toString(), ex);
         } catch (ResourceNotFoundException ex) {
             throw new CfnNotFoundException(ex);
@@ -128,14 +130,11 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                 .build();
     }
 
-    private void removeTags(final String arn, final Set<Tag> tagsToRemove) {
+    private void removeTags(final String arn, final Set<String> tagsToRemove) {
         if (!tagsToRemove.isEmpty()) {
-            final UntagResourceRequest untagResourceRequest = new UntagResourceRequest().withResourceARN(arn).withTagKeys(
-                    tagsToRemove.stream()
-                            .map(Tag::getKey)
-                            // sort with decisive order for reliable testing
-                            .sorted()
-                            .collect(Collectors.toList()));
+            final UntagResourceRequest untagResourceRequest = new UntagResourceRequest()
+                    .withResourceARN(arn)
+                    .withTagKeys(tagsToRemove);
             this.proxy.injectCredentialsAndInvoke(untagResourceRequest, timestreamClient::untagResource);
         }
     }
@@ -152,10 +151,5 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                             .collect(Collectors.toList()));
             this.proxy.injectCredentialsAndInvoke(tagResourceRequest, timestreamClient::tagResource);
         }
-    }
-
-    private Set<Tag> getTags(final ResourceModel resourceModel) {
-        return resourceModel.getTags() == null ?
-                Collections.emptySet() : new HashSet<>(resourceModel.getTags());
     }
 }

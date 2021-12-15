@@ -2,6 +2,7 @@ package software.amazon.timestream.database;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,7 @@ import com.amazonaws.services.timestreamwrite.model.DescribeEndpointsRequest;
 import com.amazonaws.services.timestreamwrite.model.DescribeEndpointsResult;
 import com.amazonaws.services.timestreamwrite.model.Endpoint;
 import com.amazonaws.services.timestreamwrite.model.InternalServerException;
+import com.amazonaws.services.timestreamwrite.model.InvalidEndpointException;
 import com.amazonaws.services.timestreamwrite.model.ListTagsForResourceRequest;
 import com.amazonaws.services.timestreamwrite.model.ListTagsForResourceResult;
 import com.amazonaws.services.timestreamwrite.model.ResourceNotFoundException;
@@ -65,7 +67,7 @@ public class ReadHandlerTest {
     public void setup() {
         proxy = mock(AmazonWebServicesClientProxy.class);
         doReturn(new DescribeEndpointsResult().withEndpoints(new Endpoint().withAddress("endpoint")))
-                .when(proxy).injectCredentialsAndInvoke(any(DescribeEndpointsRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeEndpointsRequest.class), any(Function.class));
         logger = mock(Logger.class);
     }
 
@@ -82,11 +84,11 @@ public class ReadHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceReadHandlerRequest();
         final DescribeDatabaseResult describeDatabaseResult = givenADescribeDatabaseResult();
         final ListTagsForResourceResult listTagsForResourceResult = givenAListTagsForResourceResultWithTags();
-        doReturn(describeDatabaseResult).when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any());
-        doReturn(listTagsForResourceResult).when(proxy).injectCredentialsAndInvoke(any(ListTagsForResourceRequest.class), any());
+        doReturn(describeDatabaseResult).when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any(Function.class));
+        doReturn(listTagsForResourceResult).when(proxy).injectCredentialsAndInvoke(any(ListTagsForResourceRequest.class),any(Function.class));
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-                = handler.handleRequest(proxy, request, null, logger);
+            = handler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -99,8 +101,8 @@ public class ReadHandlerTest {
 
         final DescribeDatabaseRequest expectedDescribeDatabaseRequest =
                 new DescribeDatabaseRequest().withDatabaseName(TEST_DATABASE_NAME);
-        verify(proxy).injectCredentialsAndInvoke(eq(expectedDescribeDatabaseRequest), any());
-        verify(proxy).injectCredentialsAndInvoke(eq(new ListTagsForResourceRequest().withResourceARN(TEST_ARN)), any());
+        verify(proxy).injectCredentialsAndInvoke(eq(expectedDescribeDatabaseRequest), any(Function.class));
+        verify(proxy).injectCredentialsAndInvoke(eq(new ListTagsForResourceRequest().withResourceARN(TEST_ARN)), any(Function.class));
         verifyNoMoreInteractions(proxy);
     }
 
@@ -112,7 +114,7 @@ public class ReadHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceReadHandlerRequest();
 
         doThrow(new ResourceNotFoundException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any(Function.class));
 
         assertThrows(CfnNotFoundException.class, () -> handler.handleRequest(proxy, request, null, logger));
     }
@@ -122,7 +124,7 @@ public class ReadHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceReadHandlerRequest();
 
         doThrow(new ValidationException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any(Function.class));
 
         assertThrows(CfnInvalidRequestException.class, () -> handler.handleRequest(proxy, request, null, logger));
     }
@@ -132,7 +134,7 @@ public class ReadHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceReadHandlerRequest();
 
         doThrow(new AccessDeniedException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any(Function.class));
 
         assertThrows(CfnAccessDeniedException.class, () -> handler.handleRequest(proxy, request, null, logger));
     }
@@ -142,7 +144,7 @@ public class ReadHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceReadHandlerRequest();
 
         doThrow(new ThrottlingException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any(Function.class));
 
         assertThrows(CfnThrottlingException.class, () -> handler.handleRequest(proxy, request, null, logger));
     }
@@ -152,9 +154,19 @@ public class ReadHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceReadHandlerRequest();
 
         doThrow(new InternalServerException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any(Function.class));
 
         assertThrows(CfnInternalFailureException.class, () -> handler.handleRequest(proxy, request, null, logger));
+    }
+
+    @Test
+    public void readDatabaseShouldThrowWhenInvalidEndpointException() {
+        final ResourceHandlerRequest<ResourceModel> request = givenAResourceReadHandlerRequest();
+
+        doThrow(new InvalidEndpointException("Test exception"))
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeDatabaseRequest.class), any(Function.class));
+
+        assertThrows(CfnInvalidRequestException.class, () -> handler.handleRequest(proxy, request, null, logger));
     }
 
     private DescribeDatabaseResult givenADescribeDatabaseResult() {

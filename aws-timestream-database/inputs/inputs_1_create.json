@@ -1,3 +1,9 @@
 {
-    "DatabaseName": "TestDatabaseNameForDbContractTest"
+  "DatabaseName": "TestDatabaseNameForDbContractTest",
+  "Tags": [
+    {
+      "Key" : "testKey",
+      "Value": "testValue"
+    }
+  ]
 }

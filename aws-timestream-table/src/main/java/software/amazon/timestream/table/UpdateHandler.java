@@ -1,9 +1,8 @@
 package software.amazon.timestream.table;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 import software.amazon.cloudformation.exceptions.CfnAccessDeniedException;
@@ -22,6 +21,7 @@ import com.amazonaws.services.timestreamwrite.model.AccessDeniedException;
 import com.amazonaws.services.timestreamwrite.model.DescribeTableRequest;
 import com.amazonaws.services.timestreamwrite.model.DescribeTableResult;
 import com.amazonaws.services.timestreamwrite.model.InternalServerException;
+import com.amazonaws.services.timestreamwrite.model.InvalidEndpointException;
 import com.amazonaws.services.timestreamwrite.model.ResourceNotFoundException;
 import com.amazonaws.services.timestreamwrite.model.RetentionProperties;
 import com.amazonaws.services.timestreamwrite.model.TagResourceRequest;
@@ -44,10 +44,10 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
 
     @Override
     public ProgressEvent<ResourceModel, CallbackContext> handleRequest(
-            final AmazonWebServicesClientProxy proxy,
-            final ResourceHandlerRequest<ResourceModel> request,
-            final CallbackContext callbackContext,
-            final Logger logger) {
+        final AmazonWebServicesClientProxy proxy,
+        final ResourceHandlerRequest<ResourceModel> request,
+        final CallbackContext callbackContext,
+        final Logger logger) {
 
         timestreamClient = TimestreamClientFactory.get(proxy, logger);
         this.proxy = proxy;
@@ -55,18 +55,20 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         final ResourceModel model = request.getDesiredResourceState();
         final ResourceModel existingModel = request.getPreviousResourceState();
 
-        final Set<Tag> currentTags = getTags(existingModel);
-        final Set<Tag> desiredTags = getTags(model);
+        final Map<String, String> desiredTags = TagHelper.getNewDesiredTags(model, request);
+        final Map<String, String> previousTags = TagHelper.getPreviouslyAttachedTags(request);
 
-        // get tags in desired tags but not in existing tags
-        final Set<Tag> tagsToAdd = Sets.difference(desiredTags, currentTags);
-        // get tags in existing tags but not in desired tags
-        final Set<Tag> tagsToRemove = Sets.difference(currentTags, desiredTags);
+        final Set<Tag> tagsToAdd = TagHelper.convertToSet(
+                TagHelper.generateTagsToAdd(previousTags, desiredTags));
+        final Set<String> tagsToRemove = TagHelper.generateTagsToRemove(previousTags, desiredTags);
 
         try {
             RetentionProperties retentionProperties;
 
             if (model.getRetentionProperties() == null) {
+                // TODO there are cases when Uluru not keeping RetentionProperties in the existing model properly
+                // here will fetch from TS directly for the current RetentionProperties if not defined in the CFN
+                // template
                 final DescribeTableRequest describeTableRequest =
                         new DescribeTableRequest()
                                 .withDatabaseName(model.getDatabaseName())
@@ -97,7 +99,7 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
             throw new CfnInternalFailureException(ex);
         } catch (ThrottlingException ex) {
             throw new CfnThrottlingException(UPDATE_TABLE, ex);
-        } catch (ValidationException ex) {
+        } catch (ValidationException | InvalidEndpointException ex) {
             throw new CfnInvalidRequestException(request.toString(), ex);
         } catch (ResourceNotFoundException ex) {
             // could be either database does not exist or table does not exist.
@@ -107,19 +109,16 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         }
 
         return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                .resourceModel(model)
-                .status(OperationStatus.SUCCESS)
-                .build();
+            .resourceModel(model)
+            .status(OperationStatus.SUCCESS)
+            .build();
     }
 
-    private void removeTags(final String arn, final Set<Tag> tagsToRemove) {
+    private void removeTags(final String arn, final Set<String> tagsToRemove) {
         if (!tagsToRemove.isEmpty()) {
-            final UntagResourceRequest untagResourceRequest = new UntagResourceRequest().withResourceARN(arn).withTagKeys(
-                    tagsToRemove.stream()
-                            .map(Tag::getKey)
-                            // sort with decisive order for reliable testing
-                            .sorted()
-                            .collect(Collectors.toList()));
+            final UntagResourceRequest untagResourceRequest = new UntagResourceRequest()
+                    .withResourceARN(arn)
+                    .withTagKeys(tagsToRemove);
             this.proxy.injectCredentialsAndInvoke(untagResourceRequest, timestreamClient::untagResource);
         }
     }
@@ -128,18 +127,13 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
         if (!tagsToAdd.isEmpty()) {
             final TagResourceRequest tagResourceRequest = new TagResourceRequest().withResourceARN(arn).withTags(
                     tagsToAdd.stream().map(
-                            tag -> new com.amazonaws.services.timestreamwrite.model.Tag()
-                                    .withKey(tag.getKey())
-                                    .withValue(tag.getValue()))
+                                    tag -> new com.amazonaws.services.timestreamwrite.model.Tag()
+                                            .withKey(tag.getKey())
+                                            .withValue(tag.getValue()))
                             // sort with decisive order for reliable testing
                             .sorted(Comparator.comparing(com.amazonaws.services.timestreamwrite.model.Tag::getKey))
                             .collect(Collectors.toList()));
             this.proxy.injectCredentialsAndInvoke(tagResourceRequest, timestreamClient::tagResource);
         }
-    }
-
-    private Set<Tag> getTags(final ResourceModel resourceModel) {
-        return resourceModel.getTags() == null ?
-                Collections.emptySet() : new HashSet<>(resourceModel.getTags());
     }
 }

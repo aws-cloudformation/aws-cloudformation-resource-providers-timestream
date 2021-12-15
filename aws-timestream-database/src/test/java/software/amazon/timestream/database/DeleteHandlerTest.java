@@ -22,8 +22,11 @@ import com.amazonaws.services.timestreamwrite.model.DescribeEndpointsRequest;
 import com.amazonaws.services.timestreamwrite.model.DescribeEndpointsResult;
 import com.amazonaws.services.timestreamwrite.model.Endpoint;
 import com.amazonaws.services.timestreamwrite.model.InternalServerException;
+import com.amazonaws.services.timestreamwrite.model.InvalidEndpointException;
 import com.amazonaws.services.timestreamwrite.model.ResourceNotFoundException;
 import com.amazonaws.services.timestreamwrite.model.ValidationException;
+
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -50,7 +53,7 @@ public class DeleteHandlerTest {
     public void setup() {
         proxy = mock(AmazonWebServicesClientProxy.class);
         doReturn(new DescribeEndpointsResult().withEndpoints(new Endpoint().withAddress("endpoint")))
-                .when(proxy).injectCredentialsAndInvoke(any(DescribeEndpointsRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DescribeEndpointsRequest.class), any(Function.class));
         logger = mock(Logger.class);
     }
 
@@ -59,7 +62,7 @@ public class DeleteHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         final ProgressEvent<ResourceModel, CallbackContext> response
-                = handler.handleRequest(proxy, request, null, logger);
+            = handler.handleRequest(proxy, request, null, logger);
 
         assertThat(response).isNotNull();
         assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
@@ -72,7 +75,7 @@ public class DeleteHandlerTest {
 
         final DeleteDatabaseRequest expectedDeleteDatabaseRequest =
                 new DeleteDatabaseRequest().withDatabaseName("TestDatabaseName");
-        verify(proxy).injectCredentialsAndInvoke(eq(expectedDeleteDatabaseRequest), any());
+        verify(proxy).injectCredentialsAndInvoke(eq(expectedDeleteDatabaseRequest), any(Function.class));
     }
 
     /*
@@ -83,7 +86,7 @@ public class DeleteHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new ConflictException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(DeleteDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DeleteDatabaseRequest.class), any(Function.class));
 
         assertThrows(
                 CfnResourceConflictException.class,
@@ -95,7 +98,7 @@ public class DeleteHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new ResourceNotFoundException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(DeleteDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DeleteDatabaseRequest.class), any(Function.class));
 
         assertThrows(
                 CfnNotFoundException.class,
@@ -107,7 +110,7 @@ public class DeleteHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new ValidationException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(DeleteDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DeleteDatabaseRequest.class), any(Function.class));
 
         assertThrows(
                 CfnInvalidRequestException.class,
@@ -119,10 +122,22 @@ public class DeleteHandlerTest {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
 
         doThrow(new InternalServerException("Test exception"))
-                .when(proxy).injectCredentialsAndInvoke(any(DeleteDatabaseRequest.class), any());
+                .when(proxy).injectCredentialsAndInvoke(any(DeleteDatabaseRequest.class), any(Function.class));
 
         assertThrows(
                 CfnInternalFailureException.class,
+                () -> handler.handleRequest(proxy, request, null, logger));
+    }
+
+    @Test
+    public void deleteDatabaseShouldThrowWhenInvalidEndpointException() {
+        final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
+
+        doThrow(new InvalidEndpointException("Test exception"))
+                .when(proxy).injectCredentialsAndInvoke(any(DeleteDatabaseRequest.class), any(Function.class));
+
+        assertThrows(
+                CfnInvalidRequestException.class,
                 () -> handler.handleRequest(proxy, request, null, logger));
     }
 
