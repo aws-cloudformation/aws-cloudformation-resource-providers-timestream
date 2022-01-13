@@ -77,8 +77,8 @@ public class UpdateHandlerTest {
     @Test
     public void updateTableShouldSucceed() {
         final ResourceHandlerRequest<ResourceModel> request = givenAResourceHandlerRequest();
-        final Table record = new Table().withDatabaseName(TEST_DATABASE_NAME).withTableName(TEST_TABLE_NAME).withArn(TEST_ARN);
-        final UpdateTableResult updateTableResult = new UpdateTableResult().withTable(record);
+        final Table table = new Table().withDatabaseName(TEST_DATABASE_NAME).withTableName(TEST_TABLE_NAME).withArn(TEST_ARN);
+        final UpdateTableResult updateTableResult = new UpdateTableResult().withTable(table);
         doReturn(updateTableResult).when(proxy).injectCredentialsAndInvoke(any(UpdateTableRequest.class), any(Function.class));
 
         final ProgressEvent<ResourceModel, CallbackContext> response
@@ -93,13 +93,27 @@ public class UpdateHandlerTest {
         assertThat(response.getMessage()).isNull();
         assertThat(response.getErrorCode()).isNull();
 
+        final com.amazonaws.services.timestreamwrite.model.S3Configuration expectedS3Configuration =
+                new com.amazonaws.services.timestreamwrite.model.S3Configuration()
+                    .withBucketName("BucketName")
+                    .withObjectKeyPrefix("ObjectKeyPrefix")
+                    .withEncryptionOption("EncryptionOption")
+                    .withKmsKeyId("KmsKeyId");
+
+        final com.amazonaws.services.timestreamwrite.model.MagneticStoreRejectedDataLocation expectedLocation =
+                new com.amazonaws.services.timestreamwrite.model.MagneticStoreRejectedDataLocation()
+                    .withS3Configuration(expectedS3Configuration);
+
         final UpdateTableRequest expectedUpdateTableRequest =
                 new UpdateTableRequest()
                         .withDatabaseName(TEST_DATABASE_NAME)
                         .withTableName(TEST_TABLE_NAME)
                         .withRetentionProperties(new com.amazonaws.services.timestreamwrite.model.RetentionProperties()
                                 .withMemoryStoreRetentionPeriodInHours(9L)
-                                .withMagneticStoreRetentionPeriodInDays(14L));
+                                .withMagneticStoreRetentionPeriodInDays(14L))
+                        .withMagneticStoreWriteProperties(new com.amazonaws.services.timestreamwrite.model.MagneticStoreWriteProperties()
+                                .withEnableMagneticStoreWrites(true)
+                                .withMagneticStoreRejectedDataLocation(expectedLocation));
 
         final TagResourceRequest expectedTagResourceRequest =
                 new TagResourceRequest().withResourceARN(TEST_ARN).withTags(
@@ -192,6 +206,17 @@ public class UpdateHandlerTest {
     }
 
     private ResourceHandlerRequest<ResourceModel> givenAResourceHandlerRequest() {
+        final S3Configuration s3Configuration = S3Configuration.builder()
+                .bucketName("BucketName")
+                .objectKeyPrefix("ObjectKeyPrefix")
+                .encryptionOption("EncryptionOption")
+                .kmsKeyId("KmsKeyId")
+                .build();
+
+        final MagneticStoreRejectedDataLocation dataLocation = MagneticStoreRejectedDataLocation.builder()
+                .s3Configuration(s3Configuration)
+                .build();
+
         final ResourceModel model =
                 ResourceModel.builder()
                         .databaseName(TEST_DATABASE_NAME)
@@ -199,6 +224,10 @@ public class UpdateHandlerTest {
                         .retentionProperties(RetentionProperties.builder()
                                 .memoryStoreRetentionPeriodInHours("9")
                                 .magneticStoreRetentionPeriodInDays("14")
+                                .build())
+                        .magneticStoreWriteProperties(MagneticStoreWriteProperties.builder()
+                                .enableMagneticStoreWrites(true)
+                                .magneticStoreRejectedDataLocation(dataLocation)
                                 .build())
                         .tags(Arrays.asList(
                                 Tag.builder().key(TEST_TAG_KEY_2).value(TEST_TAG_VALUE_2_NEW).build(),
