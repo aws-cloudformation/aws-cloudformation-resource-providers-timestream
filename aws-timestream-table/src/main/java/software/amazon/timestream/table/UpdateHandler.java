@@ -24,6 +24,7 @@ import com.amazonaws.services.timestreamwrite.model.InternalServerException;
 import com.amazonaws.services.timestreamwrite.model.InvalidEndpointException;
 import com.amazonaws.services.timestreamwrite.model.ResourceNotFoundException;
 import com.amazonaws.services.timestreamwrite.model.RetentionProperties;
+import com.amazonaws.services.timestreamwrite.model.MagneticStoreWriteProperties;
 import com.amazonaws.services.timestreamwrite.model.TagResourceRequest;
 import com.amazonaws.services.timestreamwrite.model.ThrottlingException;
 import com.amazonaws.services.timestreamwrite.model.UntagResourceRequest;
@@ -79,11 +80,14 @@ public class UpdateHandler extends BaseHandler<CallbackContext> {
                 retentionProperties = RetentionPropertiesModelConverter.convert(model.getRetentionProperties());
             }
 
+            MagneticStoreWriteProperties magneticStoreWriteProperties = MagneticStoreWritePropertiesModelConverter.convert(model.getMagneticStoreWriteProperties());
+
             final UpdateTableRequest updateTableRequest =
                     new UpdateTableRequest()
                             .withDatabaseName(model.getDatabaseName())
                             .withTableName(model.getTableName())
-                            .withRetentionProperties(retentionProperties);
+                            .withRetentionProperties(retentionProperties)
+                            .withMagneticStoreWriteProperties(magneticStoreWriteProperties);
 
             final UpdateTableResult updateTableResult =
                     this.proxy.injectCredentialsAndInvoke(updateTableRequest, timestreamClient::updateTable);

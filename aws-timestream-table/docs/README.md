@@ -15,6 +15,7 @@ To declare this entity in your AWS CloudFormation template, use the following sy
         "<a href="#databasename" title="DatabaseName">DatabaseName</a>" : <i>String</i>,
         "<a href="#tablename" title="TableName">TableName</a>" : <i>String</i>,
         "<a href="#retentionproperties" title="RetentionProperties">RetentionProperties</a>" : <i><a href="retentionproperties.md">RetentionProperties</a></i>,
+        "<a href="#magneticstorewriteproperties" title="MagneticStoreWriteProperties">MagneticStoreWriteProperties</a>" : <i><a href="magneticstorewriteproperties.md">MagneticStoreWriteProperties</a></i>,
         "<a href="#tags" title="Tags">Tags</a>" : <i>[ <a href="tag.md">Tag</a>, ... ]</i>
     }
 }
@@ -28,6 +29,7 @@ Properties:
     <a href="#databasename" title="DatabaseName">DatabaseName</a>: <i>String</i>
     <a href="#tablename" title="TableName">TableName</a>: <i>String</i>
     <a href="#retentionproperties" title="RetentionProperties">RetentionProperties</a>: <i><a href="retentionproperties.md">RetentionProperties</a></i>
+    <a href="#magneticstorewriteproperties" title="MagneticStoreWriteProperties">MagneticStoreWriteProperties</a>: <i><a href="magneticstorewriteproperties.md">MagneticStoreWriteProperties</a></i>
     <a href="#tags" title="Tags">Tags</a>: <i>
       - <a href="tag.md">Tag</a></i>
 </pre>
@@ -42,7 +44,7 @@ _Required_: Yes
 
 _Type_: String
 
-_Pattern_: <code>^[a-zA-Z0-9_.-]{3,64}$</code>
+_Pattern_: <code>^[a-zA-Z0-9_.-]{3,256}$</code>
 
 _Update requires_: [Replacement](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-replacement)
 
@@ -54,7 +56,7 @@ _Required_: No
 
 _Type_: String
 
-_Pattern_: <code>^[a-zA-Z0-9_.-]{3,64}$</code>
+_Pattern_: <code>^[a-zA-Z0-9_.-]{3,256}$</code>
 
 _Update requires_: [Replacement](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-replacement)
 
@@ -65,6 +67,16 @@ The retention duration of the memory store and the magnetic store.
 _Required_: No
 
 _Type_: <a href="retentionproperties.md">RetentionProperties</a>
+
+_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
+
+#### MagneticStoreWriteProperties
+
+The properties that determine whether magnetic store writes are enabled.
+
+_Required_: No
+
+_Type_: <a href="magneticstorewriteproperties.md">MagneticStoreWriteProperties</a>
 
 _Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
 

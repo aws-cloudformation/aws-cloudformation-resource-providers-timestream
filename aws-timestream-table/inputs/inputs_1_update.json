@@ -5,6 +5,9 @@
     "MemoryStoreRetentionPeriodInHours": "48",
     "MagneticStoreRetentionPeriodInDays": "1800"
   },
+  "MagneticStoreWriteProperties": {
+    "EnableMagneticStoreWrites": false
+  },
   "Tags": [
     {
       "Key" : "stage",

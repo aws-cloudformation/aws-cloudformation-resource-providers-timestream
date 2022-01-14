@@ -5,6 +5,15 @@
     "MemoryStoreRetentionPeriodInHours": "48",
     "MagneticStoreRetentionPeriodInDays": "3650"
   },
+  "MagneticStoreWriteProperties": {
+    "EnableMagneticStoreWrites": true,
+    "MagneticStoreRejectedDataLocation": {
+      "S3Configuration": {
+        "BucketName": "{{ARRContractTestsS3BucketNameExport}}",
+        "EncryptionOption": "SSE_S3"
+      }
+    }
+  },
   "Tags": [
     {
       "Key" : "testKey",

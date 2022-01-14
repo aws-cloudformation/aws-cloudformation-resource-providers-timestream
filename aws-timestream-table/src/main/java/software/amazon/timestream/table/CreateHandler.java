@@ -26,6 +26,7 @@ import com.amazonaws.services.timestreamwrite.model.CreateTableResult;
 import com.amazonaws.services.timestreamwrite.model.InternalServerException;
 import com.amazonaws.services.timestreamwrite.model.InvalidEndpointException;
 import com.amazonaws.services.timestreamwrite.model.ResourceNotFoundException;
+import com.amazonaws.services.timestreamwrite.model.MagneticStoreWriteProperties;
 import com.amazonaws.services.timestreamwrite.model.ServiceQuotaExceededException;
 import com.amazonaws.services.timestreamwrite.model.ThrottlingException;
 import com.amazonaws.services.timestreamwrite.model.ValidationException;
@@ -67,11 +68,14 @@ public class CreateHandler extends BaseHandler<CallbackContext> {
                     ));
         }
 
+        final MagneticStoreWriteProperties magneticStoreWriteProperties = MagneticStoreWritePropertiesModelConverter.convert(model.getMagneticStoreWriteProperties());
+
         final CreateTableRequest createTableRequest =
                 new CreateTableRequest()
                         .withDatabaseName(model.getDatabaseName())
                         .withTableName(model.getTableName())
-                        .withRetentionProperties(RetentionPropertiesModelConverter.convert(model.getRetentionProperties()));
+                        .withRetentionProperties(RetentionPropertiesModelConverter.convert(model.getRetentionProperties()))
+                        .withMagneticStoreWriteProperties(magneticStoreWriteProperties);
 
         final Set<Tag> tags = TagHelper.convertToSet(
                 TagHelper.generateTagsForCreate(model, request));

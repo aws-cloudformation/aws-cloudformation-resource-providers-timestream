@@ -60,6 +60,19 @@ public class CreateHandlerTest {
             .memoryStoreRetentionPeriodInHours("12")
             .magneticStoreRetentionPeriodInDays("7")
             .build();
+    private static final S3Configuration TEST_S3_CONFIGURATION = S3Configuration.builder()
+            .bucketName("BucketName")
+            .objectKeyPrefix("ObjectKeyPrefix")
+            .encryptionOption("EncryptionOption")
+            .kmsKeyId("KmsKeyId")
+            .build();
+    private static final MagneticStoreRejectedDataLocation TEST_REJECTED_LOCATION = MagneticStoreRejectedDataLocation.builder()
+            .s3Configuration(TEST_S3_CONFIGURATION)
+            .build();
+    private static final MagneticStoreWriteProperties TEST_MAGNETIC_STORE_WRITE_PROPERTIES = MagneticStoreWriteProperties.builder()
+            .enableMagneticStoreWrites(true)
+            .magneticStoreRejectedDataLocation(TEST_REJECTED_LOCATION)
+            .build();
     private static final String TEST_CLIENT_REQUEST_TOKEN = "00000000-0000-0000-0000-000000000000";
     private static final String TEST_RESOURCE_ID = "MyResource";
 
@@ -87,7 +100,10 @@ public class CreateHandlerTest {
                 new Table().withDatabaseName(TEST_DATABASE_NAME)
                         .withTableName(TEST_TABLE_NAME)
                         .withRetentionProperties(
-                                RetentionPropertiesModelConverter.convert(TEST_RETENTION_PROPERTIES))))
+                                RetentionPropertiesModelConverter.convert(TEST_RETENTION_PROPERTIES))
+                        .withMagneticStoreWriteProperties(
+                                MagneticStoreWritePropertiesModelConverter.convert(TEST_MAGNETIC_STORE_WRITE_PROPERTIES))
+                ))
                 .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any(Function.class));
 
         final ProgressEvent<ResourceModel, CallbackContext> response
@@ -108,7 +124,9 @@ public class CreateHandlerTest {
                         .withTableName(TEST_TABLE_NAME)
                         .withRetentionProperties(new com.amazonaws.services.timestreamwrite.model.RetentionProperties()
                                 .withMagneticStoreRetentionPeriodInDays(7L)
-                                .withMemoryStoreRetentionPeriodInHours(12L));
+                                .withMemoryStoreRetentionPeriodInHours(12L))
+                        .withMagneticStoreWriteProperties(
+                                MagneticStoreWritePropertiesModelConverter.convert(TEST_MAGNETIC_STORE_WRITE_PROPERTIES));
         verify(proxy).injectCredentialsAndInvoke(eq(expectedCreateTableRequest), any(Function.class));
     }
 
@@ -120,7 +138,8 @@ public class CreateHandlerTest {
                 new Table().withDatabaseName(TEST_DATABASE_NAME)
                         .withTableName(TEST_TABLE_NAME)
                         .withRetentionProperties(
-                                RetentionPropertiesModelConverter.convert(TEST_RETENTION_PROPERTIES))))
+                                RetentionPropertiesModelConverter.convert(TEST_RETENTION_PROPERTIES))
+                ))
                 .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any(Function.class));
 
         final ProgressEvent<ResourceModel, CallbackContext> response
@@ -147,7 +166,10 @@ public class CreateHandlerTest {
                 new Table().withDatabaseName(TEST_DATABASE_NAME)
                         .withTableName(TEST_TABLE_NAME)
                         .withRetentionProperties(
-                                RetentionPropertiesModelConverter.convert(TEST_RETENTION_PROPERTIES))))
+                                RetentionPropertiesModelConverter.convert(TEST_RETENTION_PROPERTIES))
+                        .withMagneticStoreWriteProperties(
+                                MagneticStoreWritePropertiesModelConverter.convert(TEST_MAGNETIC_STORE_WRITE_PROPERTIES))
+                ))
                 .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any(Function.class));
 
         final ProgressEvent<ResourceModel, CallbackContext> response
@@ -165,7 +187,9 @@ public class CreateHandlerTest {
         final CreateTableRequest expectedCreateTableRequest =
                 new CreateTableRequest()
                         .withDatabaseName(TEST_DATABASE_NAME)
-                        .withTableName(TEST_TABLE_NAME);
+                        .withTableName(TEST_TABLE_NAME)
+                        .withMagneticStoreWriteProperties(
+                                MagneticStoreWritePropertiesModelConverter.convert(TEST_MAGNETIC_STORE_WRITE_PROPERTIES));
         verify(proxy).injectCredentialsAndInvoke(eq(expectedCreateTableRequest), any(Function.class));
     }
 
@@ -177,7 +201,10 @@ public class CreateHandlerTest {
                 new Table().withDatabaseName(TEST_DATABASE_NAME)
                         .withTableName(TEST_TABLE_NAME)
                         .withRetentionProperties(
-                                RetentionPropertiesModelConverter.convert(TEST_RETENTION_PROPERTIES))))
+                                RetentionPropertiesModelConverter.convert(TEST_RETENTION_PROPERTIES))
+                        .withMagneticStoreWriteProperties(
+                                MagneticStoreWritePropertiesModelConverter.convert(TEST_MAGNETIC_STORE_WRITE_PROPERTIES))
+                ))
                 .when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any(Function.class));
 
         final ProgressEvent<ResourceModel, CallbackContext> response
@@ -197,6 +224,42 @@ public class CreateHandlerTest {
                         .withDatabaseName(TEST_DATABASE_NAME)
                         // table name is generated by CloudFormation when not provided
                         .withTableName(request.getDesiredResourceState().getTableName())
+                        .withRetentionProperties(new com.amazonaws.services.timestreamwrite.model.RetentionProperties()
+                                .withMagneticStoreRetentionPeriodInDays(7L)
+                                .withMemoryStoreRetentionPeriodInHours(12L))
+                        .withMagneticStoreWriteProperties(
+                            MagneticStoreWritePropertiesModelConverter.convert(TEST_MAGNETIC_STORE_WRITE_PROPERTIES));
+        verify(proxy).injectCredentialsAndInvoke(eq(expectedCreateTableRequest), any(Function.class));
+    }
+
+    @Test
+    public void createTableShouldSucceedWhenMagneticStoreWritePropertiesNotProvided() {
+        final ResourceHandlerRequest<ResourceModel> request =
+                givenAResourceHandlerRequestWithoutMagneticStoreWriteProperties();
+
+        doReturn(new CreateTableResult().withTable(
+                new Table().withDatabaseName(TEST_DATABASE_NAME)
+                        .withTableName(TEST_TABLE_NAME)
+                        .withRetentionProperties(
+                                RetentionPropertiesModelConverter.convert(TEST_RETENTION_PROPERTIES))
+        )).when(proxy).injectCredentialsAndInvoke(any(CreateTableRequest.class), any(Function.class));
+
+        final ProgressEvent<ResourceModel, CallbackContext> response
+                = handler.handleRequest(proxy, request, null, logger);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
+        assertThat(response.getCallbackContext()).isNull();
+        assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
+        assertThat(response.getResourceModel()).isEqualTo(request.getDesiredResourceState());
+        assertThat(response.getResourceModels()).isNull();
+        assertThat(response.getMessage()).isNull();
+        assertThat(response.getErrorCode()).isNull();
+
+        final CreateTableRequest expectedCreateTableRequest =
+                new CreateTableRequest()
+                        .withDatabaseName(TEST_DATABASE_NAME)
+                        .withTableName(TEST_TABLE_NAME)
                         .withRetentionProperties(new com.amazonaws.services.timestreamwrite.model.RetentionProperties()
                                 .withMagneticStoreRetentionPeriodInDays(7L)
                                 .withMemoryStoreRetentionPeriodInHours(12L));
@@ -308,6 +371,7 @@ public class CreateHandlerTest {
                         .databaseName(TEST_DATABASE_NAME)
                         .tableName(TEST_TABLE_NAME)
                         .retentionProperties(TEST_RETENTION_PROPERTIES)
+                        .magneticStoreWriteProperties(TEST_MAGNETIC_STORE_WRITE_PROPERTIES)
                         .build();
         return ResourceHandlerRequest.<ResourceModel>builder()
             .desiredResourceState(model)
@@ -320,6 +384,7 @@ public class CreateHandlerTest {
                         .databaseName(TEST_DATABASE_NAME)
                         .tableName(TEST_TABLE_NAME)
                         .retentionProperties(TEST_RETENTION_PROPERTIES)
+                        .magneticStoreWriteProperties(TEST_MAGNETIC_STORE_WRITE_PROPERTIES)
                         .tags(Arrays.asList(
                                 Tag.builder().key(TEST_TAG_KEY_1).value(TEST_TAG_VALUE_1).build(),
                                 Tag.builder().key(TEST_TAG_KEY_2).value(TEST_TAG_VALUE_2).build(),
@@ -335,6 +400,7 @@ public class CreateHandlerTest {
                 ResourceModel.builder()
                         .databaseName(TEST_DATABASE_NAME)
                         .retentionProperties(TEST_RETENTION_PROPERTIES)
+                        .magneticStoreWriteProperties(TEST_MAGNETIC_STORE_WRITE_PROPERTIES)
                         .build();
         return ResourceHandlerRequest.<ResourceModel>builder()
                 .desiredResourceState(model)
@@ -348,6 +414,21 @@ public class CreateHandlerTest {
                 ResourceModel.builder()
                         .databaseName(TEST_DATABASE_NAME)
                         .tableName(TEST_TABLE_NAME)
+                        .magneticStoreWriteProperties(TEST_MAGNETIC_STORE_WRITE_PROPERTIES)
+                        .build();
+        return ResourceHandlerRequest.<ResourceModel>builder()
+                .desiredResourceState(model)
+                .clientRequestToken(TEST_CLIENT_REQUEST_TOKEN)
+                .logicalResourceIdentifier(TEST_RESOURCE_ID)
+                .build();
+    }
+
+    private ResourceHandlerRequest<ResourceModel> givenAResourceHandlerRequestWithoutMagneticStoreWriteProperties() {
+        final ResourceModel model =
+                ResourceModel.builder()
+                        .databaseName(TEST_DATABASE_NAME)
+                        .tableName(TEST_TABLE_NAME)
+                        .retentionProperties(TEST_RETENTION_PROPERTIES)
                         .build();
         return ResourceHandlerRequest.<ResourceModel>builder()
                 .desiredResourceState(model)
